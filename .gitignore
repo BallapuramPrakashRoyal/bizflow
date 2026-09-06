@@ -1,0 +1,20 @@
+.vscode/
+**/.vscode/
+
+# Java / Maven
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Environment / secrets
+.env
+.env.*
+**/.env
+**/.env.*
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
