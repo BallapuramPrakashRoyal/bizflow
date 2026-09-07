@@ -96,4 +96,21 @@ public ProjectResponse updateProject(
             updatedProject.getCreatedAt()
     );
 }
+
+public void deleteProject(
+        Long projectId,
+        Long currentUserId) {
+
+    Project project = projectRepository.findById(projectId)
+            .orElseThrow(() ->
+                    new ResourceNotFoundException("Project not found"));
+
+    if (!project.getOwnerId().equals(currentUserId)) {
+        throw new ForbiddenException(
+                "You are not allowed to delete this project");
+    }
+
+    projectRepository.delete(project);
+}
+
 }

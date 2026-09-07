@@ -74,4 +74,22 @@ public ProjectResponse updateProject(
     );
 }
 
+@DeleteMapping("/{id}")
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void deleteProject(
+        @PathVariable Long id,
+        Authentication authentication) {
+
+    String email = authentication.getName();
+
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() ->
+                    new RuntimeException("User not found"));
+
+    projectService.deleteProject(
+            id,
+            user.getId()
+    );
+}
+
 }
