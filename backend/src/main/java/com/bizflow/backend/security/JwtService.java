@@ -11,8 +11,7 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String secretKey =
-            "BizFlowSecretKeyForJwtAuthenticationMustBeLongEnough123456789";
+    private final String secretKey = System.getenv("JWT_SECRET");
 
     private final long expirationTime = 1000 * 60 * 60; // 1 hour
 
@@ -33,5 +32,30 @@ public class JwtService {
                 .expiration(expiration)
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public String extractEmail(String token) {
+
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    public boolean isTokenValid(String token) {
+
+        try {
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token);
+
+            return true;
+
+        } catch (Exception exception) {
+            return false;
+        }
     }
 }
