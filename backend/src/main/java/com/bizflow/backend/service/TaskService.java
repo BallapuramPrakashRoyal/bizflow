@@ -133,4 +133,24 @@ public TaskResponse updateTask(
     );
 }
 
+public void deleteTask(
+        Long taskId,
+        Long currentUserId) {
+
+    Task task = taskRepository.findById(taskId)
+            .orElseThrow(() ->
+                    new ResourceNotFoundException("Task not found"));
+
+    Project project = projectRepository.findById(task.getProjectId())
+            .orElseThrow(() ->
+                    new ResourceNotFoundException("Project not found"));
+
+    if (!project.getOwnerId().equals(currentUserId)) {
+        throw new ForbiddenException(
+                "You are not allowed to delete this task");
+    }
+
+    taskRepository.delete(task);
+}
+
 }

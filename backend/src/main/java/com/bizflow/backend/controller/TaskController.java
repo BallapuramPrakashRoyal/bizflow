@@ -76,4 +76,22 @@ public TaskResponse updateTask(
             user.getId()
     );
 }
+@DeleteMapping("/{id}")
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void deleteTask(
+        @PathVariable Long id,
+        Authentication authentication) {
+
+    String email = authentication.getName();
+
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() ->
+                    new RuntimeException("User not found"));
+
+    taskService.deleteTask(
+            id,
+            user.getId()
+    );
+}
+
 }
