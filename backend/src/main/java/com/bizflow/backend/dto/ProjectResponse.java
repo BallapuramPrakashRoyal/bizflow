@@ -8,22 +8,22 @@ public class ProjectResponse {
     private String name;
     private String description;
     private Long ownerId;
+    private Long organizationId;
     private LocalDateTime createdAt;
-
-    public ProjectResponse() {
-    }
 
     public ProjectResponse(
             Long id,
             String name,
             String description,
             Long ownerId,
+            Long organizationId,
             LocalDateTime createdAt) {
 
         this.id = id;
         this.name = name;
         this.description = description;
         this.ownerId = ownerId;
+        this.organizationId = organizationId;
         this.createdAt = createdAt;
     }
 
@@ -41,6 +41,10 @@ public class ProjectResponse {
 
     public Long getOwnerId() {
         return ownerId;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
     }
 
     public LocalDateTime getCreatedAt() {

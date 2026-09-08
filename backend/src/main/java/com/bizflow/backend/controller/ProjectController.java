@@ -2,6 +2,7 @@ package com.bizflow.backend.controller;
 
 import com.bizflow.backend.dto.ProjectRequest;
 import com.bizflow.backend.dto.ProjectResponse;
+import com.bizflow.backend.dto.ProjectUpdateRequest;
 import com.bizflow.backend.entity.User;
 import com.bizflow.backend.repository.UserRepository;
 import com.bizflow.backend.service.ProjectService;
@@ -11,9 +12,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-import org.springframework.web.bind.annotation.*;
-import com.bizflow.backend.dto.ProjectUpdateRequest;
+
 @RestController
 @RequestMapping("/api/projects")
 public class ProjectController {
@@ -35,61 +36,74 @@ public class ProjectController {
             @Valid @RequestBody ProjectRequest request,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(authentication);
 
         return projectService.createProject(
                 request,
                 user.getId()
         );
     }
+
     @GetMapping
-    public List<ProjectResponse> getAllProjects() {
-        return projectService.getAllProjects();
-}
-@GetMapping("/{id}")
-public ProjectResponse getProjectById(@PathVariable Long id) {
-    return projectService.getProjectById(id);
-}
+    public List<ProjectResponse> getAllProjects(
+            Authentication authentication) {
 
-@PutMapping("/{id}")
-public ProjectResponse updateProject(
-        @PathVariable Long id,
-        @Valid @RequestBody ProjectUpdateRequest request,
-        Authentication authentication) {
+        User user = getAuthenticatedUser(authentication);
 
-    String email = authentication.getName();
+        return projectService.getAllProjects(
+                user.getId()
+        );
+    }
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+    @GetMapping("/{id}")
+    public ProjectResponse getProjectById(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-    return projectService.updateProject(
-            id,
-            request,
-            user.getId()
-    );
-}
+        User user = getAuthenticatedUser(authentication);
 
-@DeleteMapping("/{id}")
-@ResponseStatus(HttpStatus.NO_CONTENT)
-public void deleteProject(
-        @PathVariable Long id,
-        Authentication authentication) {
+        return projectService.getProjectById(
+                id,
+                user.getId()
+        );
+    }
 
-    String email = authentication.getName();
+    @PutMapping("/{id}")
+    public ProjectResponse updateProject(
+            @PathVariable Long id,
+            @Valid @RequestBody ProjectUpdateRequest request,
+            Authentication authentication) {
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(authentication);
 
-    projectService.deleteProject(
-            id,
-            user.getId()
-    );
-}
+        return projectService.updateProject(
+                id,
+                request,
+                user.getId()
+        );
+    }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProject(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+
+        projectService.deleteProject(
+                id,
+                user.getId()
+        );
+    }
+
+    private User getAuthenticatedUser(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+    }
 }

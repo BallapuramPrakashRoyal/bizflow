@@ -2,115 +2,155 @@ package com.bizflow.backend.service;
 
 import com.bizflow.backend.dto.ProjectRequest;
 import com.bizflow.backend.dto.ProjectResponse;
+import com.bizflow.backend.dto.ProjectUpdateRequest;
+import com.bizflow.backend.entity.OrganizationMember;
 import com.bizflow.backend.entity.Project;
+import com.bizflow.backend.exception.ForbiddenException;
+import com.bizflow.backend.exception.ResourceNotFoundException;
+import com.bizflow.backend.repository.OrganizationMemberRepository;
 import com.bizflow.backend.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import com.bizflow.backend.exception.ResourceNotFoundException;
 
-import com.bizflow.backend.dto.ProjectUpdateRequest;
-import com.bizflow.backend.exception.ResourceNotFoundException;
-import com.bizflow.backend.exception.ForbiddenException;
+import java.util.List;
+
 @Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
 
-    public ProjectService(ProjectRepository projectRepository) {
+    public ProjectService(
+            ProjectRepository projectRepository,
+            OrganizationMemberRepository organizationMemberRepository) {
+
         this.projectRepository = projectRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
     }
 
     public ProjectResponse createProject(
             ProjectRequest request,
-            Long ownerId) {
+            Long currentUserId) {
+
+        organizationMemberRepository
+                .findByOrganizationIdAndUserId(
+                        request.getOrganizationId(),
+                        currentUserId)
+                .orElseThrow(() ->
+                        new ForbiddenException(
+                                "You are not a member of this organization"));
 
         Project project = new Project(
                 request.getName(),
                 request.getDescription(),
-                ownerId
+                currentUserId,
+                request.getOrganizationId()
         );
 
         Project savedProject = projectRepository.save(project);
 
+        return toResponse(savedProject);
+    }
+
+    public List<ProjectResponse> getAllProjects(Long currentUserId) {
+
+        List<OrganizationMember> memberships =
+                organizationMemberRepository.findByUserId(currentUserId);
+
+        List<Long> organizationIds = memberships.stream()
+                .map(OrganizationMember::getOrganizationId)
+                .toList();
+
+        return projectRepository.findAll()
+                .stream()
+                .filter(project ->
+                        organizationIds.contains(project.getOrganizationId()))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public ProjectResponse getProjectById(
+            Long id,
+            Long currentUserId) {
+
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        return toResponse(project);
+    }
+
+    public ProjectResponse updateProject(
+            Long id,
+            ProjectUpdateRequest request,
+            Long currentUserId) {
+
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        if (!project.getOwnerId().equals(currentUserId)) {
+            throw new ForbiddenException(
+                    "You are not allowed to update this project");
+        }
+
+        project.setName(request.getName());
+        project.setDescription(request.getDescription());
+
+        Project updatedProject = projectRepository.save(project);
+
+        return toResponse(updatedProject);
+    }
+
+    public void deleteProject(
+            Long id,
+            Long currentUserId) {
+
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        if (!project.getOwnerId().equals(currentUserId)) {
+            throw new ForbiddenException(
+                    "You are not allowed to delete this project");
+        }
+
+        projectRepository.delete(project);
+    }
+
+    private void checkOrganizationAccess(
+            Project project,
+            Long currentUserId) {
+
+        boolean isMember =
+                organizationMemberRepository
+                        .existsByOrganizationIdAndUserId(
+                                project.getOrganizationId(),
+                                currentUserId);
+
+        if (!isMember) {
+            throw new ForbiddenException(
+                    "You are not a member of this project's organization");
+        }
+    }
+
+    private ProjectResponse toResponse(Project project) {
+
         return new ProjectResponse(
-                savedProject.getId(),
-                savedProject.getName(),
-                savedProject.getDescription(),
-                savedProject.getOwnerId(),
-                savedProject.getCreatedAt()
+                project.getId(),
+                project.getName(),
+                project.getDescription(),
+                project.getOwnerId(),
+                project.getOrganizationId(),
+                project.getCreatedAt()
         );
     }
-    public List<ProjectResponse> getAllProjects() {
-
-    return projectRepository.findAll()
-            .stream()
-            .map(project -> new ProjectResponse(
-                    project.getId(),
-                    project.getName(),
-                    project.getDescription(),
-                    project.getOwnerId(),
-                    project.getCreatedAt()
-            ))
-            .toList();
-}
-
-public ProjectResponse getProjectById(Long id) {
-
-    Project project = projectRepository.findById(id)
-            .orElseThrow(() ->
-                 new ResourceNotFoundException("Project not found"));
-
-    return new ProjectResponse(
-            project.getId(),
-            project.getName(),
-            project.getDescription(),
-            project.getOwnerId(),
-            project.getCreatedAt()
-    );
-}
-
-public ProjectResponse updateProject(
-        Long projectId,
-        ProjectUpdateRequest request,
-        Long currentUserId) {
-
-    Project project = projectRepository.findById(projectId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Project not found"));
-
-    if (!project.getOwnerId().equals(currentUserId)) {
-    throw new ForbiddenException(
-            "You are not allowed to update this project");
-}
-
-    project.setName(request.getName());
-    project.setDescription(request.getDescription());
-
-    Project updatedProject = projectRepository.save(project);
-
-    return new ProjectResponse(
-            updatedProject.getId(),
-            updatedProject.getName(),
-            updatedProject.getDescription(),
-            updatedProject.getOwnerId(),
-            updatedProject.getCreatedAt()
-    );
-}
-
-public void deleteProject(
-        Long projectId,
-        Long currentUserId) {
-
-    Project project = projectRepository.findById(projectId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Project not found"));
-
-    if (!project.getOwnerId().equals(currentUserId)) {
-        throw new ForbiddenException(
-                "You are not allowed to delete this project");
-    }
-
-    projectRepository.delete(project);
-}
-
 }

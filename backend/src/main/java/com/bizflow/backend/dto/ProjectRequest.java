@@ -1,6 +1,7 @@
 package com.bizflow.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class ProjectRequest {
 
@@ -8,6 +9,9 @@ public class ProjectRequest {
     private String name;
 
     private String description;
+
+    @NotNull(message = "Organization ID is required")
+    private Long organizationId;
 
     public ProjectRequest() {
     }
@@ -26,5 +30,13 @@ public class ProjectRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
     }
 }

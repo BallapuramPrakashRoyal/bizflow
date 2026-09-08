@@ -1,7 +1,6 @@
 package com.bizflow.backend.entity;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,15 +21,24 @@ public class Project {
     private Long ownerId;
 
     @Column(nullable = false)
+    private Long organizationId;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     public Project() {
     }
 
-    public Project(String name, String description, Long ownerId) {
+    public Project(
+            String name,
+            String description,
+            Long ownerId,
+            Long organizationId) {
+
         this.name = name;
         this.description = description;
         this.ownerId = ownerId;
+        this.organizationId = organizationId;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -38,36 +46,40 @@ public class Project {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public Long getOwnerId() {
         return ownerId;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public void setOwnerId(Long ownerId) {
         this.ownerId = ownerId;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public void setOrganizationId(Long organizationId) {
+        this.organizationId = organizationId;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
