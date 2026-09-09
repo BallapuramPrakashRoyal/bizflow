@@ -2,29 +2,35 @@ package com.bizflow.backend.service;
 
 import com.bizflow.backend.dto.TaskRequest;
 import com.bizflow.backend.dto.TaskResponse;
+import com.bizflow.backend.dto.TaskUpdateRequest;
+import com.bizflow.backend.entity.OrganizationMember;
 import com.bizflow.backend.entity.Project;
 import com.bizflow.backend.entity.Task;
 import com.bizflow.backend.exception.ForbiddenException;
 import com.bizflow.backend.exception.ResourceNotFoundException;
+import com.bizflow.backend.repository.OrganizationMemberRepository;
 import com.bizflow.backend.repository.ProjectRepository;
 import com.bizflow.backend.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import com.bizflow.backend.dto.TaskUpdateRequest;
 
 @Service
 public class TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
 
     public TaskService(
             TaskRepository taskRepository,
-            ProjectRepository projectRepository) {
+            ProjectRepository projectRepository,
+            OrganizationMemberRepository organizationMemberRepository) {
 
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
     }
 
     public TaskResponse createTask(
@@ -34,6 +40,8 @@ public class TaskService {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
 
         if (!project.getOwnerId().equals(currentUserId)) {
             throw new ForbiddenException(
@@ -49,108 +57,134 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
+        return toResponse(savedTask);
+    }
+
+    public List<TaskResponse> getAllTasks(Long currentUserId) {
+
+        return taskRepository.findAll()
+                .stream()
+                .filter(task -> hasProjectAccess(
+                        task.getProjectId(),
+                        currentUserId))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public TaskResponse getTaskById(
+            Long taskId,
+            Long currentUserId) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Task not found"));
+
+        Project project = projectRepository.findById(task.getProjectId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        return toResponse(task);
+    }
+
+    public TaskResponse updateTask(
+            Long taskId,
+            TaskUpdateRequest request,
+            Long currentUserId) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Task not found"));
+
+        Project project = projectRepository.findById(task.getProjectId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        if (!project.getOwnerId().equals(currentUserId)) {
+            throw new ForbiddenException(
+                    "You are not allowed to update this task");
+        }
+
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        task.setStatus(request.getStatus());
+        task.setAssignedUserId(request.getAssignedUserId());
+        task.setUpdatedAt(LocalDateTime.now());
+
+        Task updatedTask = taskRepository.save(task);
+
+        return toResponse(updatedTask);
+    }
+
+    public void deleteTask(
+            Long taskId,
+            Long currentUserId) {
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Task not found"));
+
+        Project project = projectRepository.findById(task.getProjectId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Project not found"));
+
+        checkOrganizationAccess(project, currentUserId);
+
+        if (!project.getOwnerId().equals(currentUserId)) {
+            throw new ForbiddenException(
+                    "You are not allowed to delete this task");
+        }
+
+        taskRepository.delete(task);
+    }
+
+    private void checkOrganizationAccess(
+            Project project,
+            Long currentUserId) {
+
+        boolean isMember =
+                organizationMemberRepository
+                        .existsByOrganizationIdAndUserId(
+                                project.getOrganizationId(),
+                                currentUserId);
+
+        if (!isMember) {
+            throw new ForbiddenException(
+                    "You are not a member of this project's organization");
+        }
+    }
+
+    private boolean hasProjectAccess(
+            Long projectId,
+            Long currentUserId) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElse(null);
+
+        if (project == null) {
+            return false;
+        }
+
+        return organizationMemberRepository
+                .existsByOrganizationIdAndUserId(
+                        project.getOrganizationId(),
+                        currentUserId);
+    }
+
+    private TaskResponse toResponse(Task task) {
+
         return new TaskResponse(
-                savedTask.getId(),
-                savedTask.getTitle(),
-                savedTask.getDescription(),
-                savedTask.getStatus(),
-                savedTask.getProjectId(),
-                savedTask.getAssignedUserId(),
-                savedTask.getCreatedAt(),
-                savedTask.getUpdatedAt()
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus(),
+                task.getProjectId(),
+                task.getAssignedUserId(),
+                task.getCreatedAt(),
+                task.getUpdatedAt()
         );
     }
-    public List<TaskResponse> getAllTasks() {
-
-    return taskRepository.findAll()
-            .stream()
-            .map(task -> new TaskResponse(
-                    task.getId(),
-                    task.getTitle(),
-                    task.getDescription(),
-                    task.getStatus(),
-                    task.getProjectId(),
-                    task.getAssignedUserId(),
-                    task.getCreatedAt(),
-                    task.getUpdatedAt()
-            ))
-            .toList();
-}
-
-public TaskResponse getTaskById(Long taskId) {
-
-    Task task = taskRepository.findById(taskId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Task not found"));
-
-    return new TaskResponse(
-            task.getId(),
-            task.getTitle(),
-            task.getDescription(),
-            task.getStatus(),
-            task.getProjectId(),
-            task.getAssignedUserId(),
-            task.getCreatedAt(),
-            task.getUpdatedAt()
-    );
-}
-
-public TaskResponse updateTask(
-        Long taskId,
-        TaskUpdateRequest request,
-        Long currentUserId) {
-
-    Task task = taskRepository.findById(taskId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Task not found"));
-
-    Project project = projectRepository.findById(task.getProjectId())
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Project not found"));
-
-    if (!project.getOwnerId().equals(currentUserId)) {
-        throw new ForbiddenException(
-                "You are not allowed to update this task");
-    }
-
-    task.setTitle(request.getTitle());
-    task.setDescription(request.getDescription());
-    task.setStatus(request.getStatus());
-    task.setAssignedUserId(request.getAssignedUserId());
-    task.setUpdatedAt(java.time.LocalDateTime.now());
-
-    Task updatedTask = taskRepository.save(task);
-
-    return new TaskResponse(
-            updatedTask.getId(),
-            updatedTask.getTitle(),
-            updatedTask.getDescription(),
-            updatedTask.getStatus(),
-            updatedTask.getProjectId(),
-            updatedTask.getAssignedUserId(),
-            updatedTask.getCreatedAt(),
-            updatedTask.getUpdatedAt()
-    );
-}
-
-public void deleteTask(
-        Long taskId,
-        Long currentUserId) {
-
-    Task task = taskRepository.findById(taskId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Task not found"));
-
-    Project project = projectRepository.findById(task.getProjectId())
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Project not found"));
-
-    if (!project.getOwnerId().equals(currentUserId)) {
-        throw new ForbiddenException(
-                "You are not allowed to delete this task");
-    }
-
-    taskRepository.delete(task);
-}
-
 }

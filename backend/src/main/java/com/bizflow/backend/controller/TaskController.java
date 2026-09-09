@@ -2,17 +2,18 @@ package com.bizflow.backend.controller;
 
 import com.bizflow.backend.dto.TaskRequest;
 import com.bizflow.backend.dto.TaskResponse;
+import com.bizflow.backend.dto.TaskUpdateRequest;
 import com.bizflow.backend.entity.User;
 import com.bizflow.backend.repository.UserRepository;
 import com.bizflow.backend.service.TaskService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import com.bizflow.backend.dto.TaskUpdateRequest;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -35,11 +36,7 @@ public class TaskController {
             @Valid @RequestBody TaskRequest request,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(authentication);
 
         return taskService.createTask(
                 request,
@@ -48,50 +45,65 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<TaskResponse> getAllTasks() {
-        return taskService.getAllTasks();
+    public List<TaskResponse> getAllTasks(
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+
+        return taskService.getAllTasks(
+                user.getId()
+        );
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{taskId}")
     public TaskResponse getTaskById(
-            @PathVariable Long id) {
+            @PathVariable Long taskId,
+            Authentication authentication) {
 
-        return taskService.getTaskById(id);
+        User user = getAuthenticatedUser(authentication);
+
+        return taskService.getTaskById(
+                taskId,
+                user.getId()
+        );
     }
-    @PutMapping("/{id}")
-public TaskResponse updateTask(
-        @PathVariable Long id,
-        @Valid @RequestBody TaskUpdateRequest request,
-        Authentication authentication) {
 
-    String email = authentication.getName();
+    @PutMapping("/{taskId}")
+    public TaskResponse updateTask(
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskUpdateRequest request,
+            Authentication authentication) {
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(authentication);
 
-    return taskService.updateTask(
-            id,
-            request,
-            user.getId()
-    );
-}
-@DeleteMapping("/{id}")
-@ResponseStatus(HttpStatus.NO_CONTENT)
-public void deleteTask(
-        @PathVariable Long id,
-        Authentication authentication) {
+        return taskService.updateTask(
+                taskId,
+                request,
+                user.getId()
+        );
+    }
 
-    String email = authentication.getName();
+    @DeleteMapping("/{taskId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTask(
+            @PathVariable Long taskId,
+            Authentication authentication) {
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+        User user = getAuthenticatedUser(authentication);
 
-    taskService.deleteTask(
-            id,
-            user.getId()
-    );
-}
+        taskService.deleteTask(
+                taskId,
+                user.getId()
+        );
+    }
 
+    private User getAuthenticatedUser(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+    }
 }
