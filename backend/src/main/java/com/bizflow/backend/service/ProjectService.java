@@ -9,7 +9,9 @@ import com.bizflow.backend.exception.ForbiddenException;
 import com.bizflow.backend.exception.ResourceNotFoundException;
 import com.bizflow.backend.repository.OrganizationMemberRepository;
 import com.bizflow.backend.repository.ProjectRepository;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,15 +23,16 @@ public class ProjectService {
     private final AuditLogService auditLogService;
 
     public ProjectService(
-        ProjectRepository projectRepository,
-        OrganizationMemberRepository organizationMemberRepository,
-        AuditLogService auditLogService) {
+            ProjectRepository projectRepository,
+            OrganizationMemberRepository organizationMemberRepository,
+            AuditLogService auditLogService) {
 
-    this.projectRepository = projectRepository;
-    this.organizationMemberRepository = organizationMemberRepository;
-    this.auditLogService = auditLogService;
-}
+        this.projectRepository = projectRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
+        this.auditLogService = auditLogService;
+    }
 
+    @Transactional
     public ProjectResponse createProject(
             ProjectRequest request,
             Long currentUserId) {
@@ -52,13 +55,13 @@ public class ProjectService {
         Project savedProject = projectRepository.save(project);
 
         auditLogService.createLog(
-        currentUserId,
-        "PROJECT_CREATED",
-        "PROJECT",
-        savedProject.getId()
+                currentUserId,
+                "PROJECT_CREATED",
+                "PROJECT",
+                savedProject.getId()
         );
 
-return toResponse(savedProject);
+        return toResponse(savedProject);
     }
 
     public List<ProjectResponse> getAllProjects(Long currentUserId) {
@@ -92,6 +95,7 @@ return toResponse(savedProject);
         return toResponse(project);
     }
 
+    @Transactional
     public ProjectResponse updateProject(
             Long id,
             ProjectUpdateRequest request,
@@ -115,15 +119,16 @@ return toResponse(savedProject);
         Project updatedProject = projectRepository.save(project);
 
         auditLogService.createLog(
-        currentUserId,
-        "PROJECT_UPDATED",
-        "PROJECT",
-        updatedProject.getId()
+                currentUserId,
+                "PROJECT_UPDATED",
+                "PROJECT",
+                updatedProject.getId()
         );
 
-return toResponse(updatedProject);
+        return toResponse(updatedProject);
     }
 
+    @Transactional
     public void deleteProject(
             Long id,
             Long currentUserId) {
@@ -141,6 +146,13 @@ return toResponse(updatedProject);
         }
 
         projectRepository.delete(project);
+
+        auditLogService.createLog(
+                currentUserId,
+                "PROJECT_DELETED",
+                "PROJECT",
+                project.getId()
+        );
     }
 
     private void checkOrganizationAccess(

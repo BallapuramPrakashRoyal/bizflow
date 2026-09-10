@@ -15,6 +15,7 @@ import com.bizflow.backend.repository.OrganizationRepository;
 import com.bizflow.backend.repository.UserRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class OrganizationService {
         this.auditLogService = auditLogService;
     }
 
+    @Transactional
     public OrganizationResponse createOrganization(
             OrganizationRequest request,
             Long currentUserId) {
@@ -67,6 +69,7 @@ public class OrganizationService {
         return toResponse(savedOrganization);
     }
 
+    @Transactional
     public OrganizationMember addMember(
             Long organizationId,
             OrganizationMemberRequest request,
@@ -143,6 +146,7 @@ public class OrganizationService {
         );
     }
 
+    @Transactional
     public OrganizationMember updateMemberRole(
             Long organizationId,
             Long targetUserId,

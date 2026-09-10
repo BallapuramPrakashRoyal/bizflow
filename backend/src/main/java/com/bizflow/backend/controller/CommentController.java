@@ -48,10 +48,12 @@ public class CommentController {
             @PathVariable Long taskId,
             Authentication authentication) {
 
-        // Authentication is required by Spring Security.
-        // The service currently handles task existence.
-        currentUserService.getCurrentUserId(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
-        return commentService.getCommentsByTaskId(taskId);
+        return commentService.getCommentsByTaskId(
+                taskId,
+                currentUserId
+        );
     }
 }

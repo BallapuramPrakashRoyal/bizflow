@@ -12,6 +12,7 @@ import com.bizflow.backend.repository.ProjectRepository;
 import com.bizflow.backend.repository.TaskRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +37,7 @@ public class TaskService {
         this.auditLogService = auditLogService;
     }
 
+    @Transactional
     public TaskResponse createTask(TaskRequest request, Long currentUserId) {
 
         Project project = projectRepository.findById(request.getProjectId())
@@ -95,6 +97,7 @@ public class TaskService {
         return toResponse(task);
     }
 
+    @Transactional
     public TaskResponse updateTask(
             Long taskId,
             TaskUpdateRequest request,
@@ -133,6 +136,7 @@ public class TaskService {
         return toResponse(updatedTask);
     }
 
+    @Transactional
     public void deleteTask(
             Long taskId,
             Long currentUserId) {
