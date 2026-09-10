@@ -3,8 +3,7 @@ package com.bizflow.backend.controller;
 import com.bizflow.backend.dto.TaskRequest;
 import com.bizflow.backend.dto.TaskResponse;
 import com.bizflow.backend.dto.TaskUpdateRequest;
-import com.bizflow.backend.entity.User;
-import com.bizflow.backend.repository.UserRepository;
+import com.bizflow.backend.service.CurrentUserService;
 import com.bizflow.backend.service.TaskService;
 
 import jakarta.validation.Valid;
@@ -20,14 +19,14 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public TaskController(
             TaskService taskService,
-            UserRepository userRepository) {
+            CurrentUserService currentUserService) {
 
         this.taskService = taskService;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping
@@ -36,11 +35,12 @@ public class TaskController {
             @Valid @RequestBody TaskRequest request,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return taskService.createTask(
                 request,
-                user.getId()
+                currentUserId
         );
     }
 
@@ -48,62 +48,54 @@ public class TaskController {
     public List<TaskResponse> getAllTasks(
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
-        return taskService.getAllTasks(
-                user.getId()
-        );
+        return taskService.getAllTasks(currentUserId);
     }
 
-    @GetMapping("/{taskId}")
+    @GetMapping("/{id}")
     public TaskResponse getTaskById(
-            @PathVariable Long taskId,
+            @PathVariable Long id,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return taskService.getTaskById(
-                taskId,
-                user.getId()
+                id,
+                currentUserId
         );
     }
 
-    @PutMapping("/{taskId}")
+    @PutMapping("/{id}")
     public TaskResponse updateTask(
-            @PathVariable Long taskId,
+            @PathVariable Long id,
             @Valid @RequestBody TaskUpdateRequest request,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return taskService.updateTask(
-                taskId,
+                id,
                 request,
-                user.getId()
+                currentUserId
         );
     }
 
-    @DeleteMapping("/{taskId}")
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTask(
-            @PathVariable Long taskId,
+            @PathVariable Long id,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         taskService.deleteTask(
-                taskId,
-                user.getId()
+                id,
+                currentUserId
         );
-    }
-
-    private User getAuthenticatedUser(
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
     }
 }

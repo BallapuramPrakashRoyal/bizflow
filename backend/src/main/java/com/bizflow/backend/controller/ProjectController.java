@@ -3,8 +3,7 @@ package com.bizflow.backend.controller;
 import com.bizflow.backend.dto.ProjectRequest;
 import com.bizflow.backend.dto.ProjectResponse;
 import com.bizflow.backend.dto.ProjectUpdateRequest;
-import com.bizflow.backend.entity.User;
-import com.bizflow.backend.repository.UserRepository;
+import com.bizflow.backend.service.CurrentUserService;
 import com.bizflow.backend.service.ProjectService;
 
 import jakarta.validation.Valid;
@@ -20,14 +19,14 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public ProjectController(
             ProjectService projectService,
-            UserRepository userRepository) {
+            CurrentUserService currentUserService) {
 
         this.projectService = projectService;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping
@@ -36,11 +35,12 @@ public class ProjectController {
             @Valid @RequestBody ProjectRequest request,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return projectService.createProject(
                 request,
-                user.getId()
+                currentUserId
         );
     }
 
@@ -48,11 +48,10 @@ public class ProjectController {
     public List<ProjectResponse> getAllProjects(
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
-        return projectService.getAllProjects(
-                user.getId()
-        );
+        return projectService.getAllProjects(currentUserId);
     }
 
     @GetMapping("/{id}")
@@ -60,11 +59,12 @@ public class ProjectController {
             @PathVariable Long id,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return projectService.getProjectById(
                 id,
-                user.getId()
+                currentUserId
         );
     }
 
@@ -74,12 +74,13 @@ public class ProjectController {
             @Valid @RequestBody ProjectUpdateRequest request,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return projectService.updateProject(
                 id,
                 request,
-                user.getId()
+                currentUserId
         );
     }
 
@@ -89,21 +90,12 @@ public class ProjectController {
             @PathVariable Long id,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         projectService.deleteProject(
                 id,
-                user.getId()
+                currentUserId
         );
-    }
-
-    private User getAuthenticatedUser(
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
     }
 }

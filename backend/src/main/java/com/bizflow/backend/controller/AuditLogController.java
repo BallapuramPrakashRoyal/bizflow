@@ -1,9 +1,8 @@
 package com.bizflow.backend.controller;
 
 import com.bizflow.backend.entity.AuditLog;
-import com.bizflow.backend.entity.User;
-import com.bizflow.backend.repository.UserRepository;
 import com.bizflow.backend.service.AuditLogService;
+import com.bizflow.backend.service.CurrentUserService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -15,23 +14,24 @@ import java.util.List;
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public AuditLogController(
             AuditLogService auditLogService,
-            UserRepository userRepository) {
+            CurrentUserService currentUserService) {
 
         this.auditLogService = auditLogService;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping("/me")
     public List<AuditLog> getMyLogs(
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
-        return auditLogService.getLogsByUser(user.getId());
+        return auditLogService.getLogsByUser(currentUserId);
     }
 
     @GetMapping
@@ -40,22 +40,13 @@ public class AuditLogController {
             @RequestParam Long entityId,
             Authentication authentication) {
 
-        User user = getAuthenticatedUser(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return auditLogService.getLogsByEntity(
                 entityType,
                 entityId,
-                user.getId()
+                currentUserId
         );
-    }
-
-    private User getAuthenticatedUser(
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
     }
 }

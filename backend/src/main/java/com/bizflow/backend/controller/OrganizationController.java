@@ -1,36 +1,34 @@
 package com.bizflow.backend.controller;
 
+import com.bizflow.backend.dto.OrganizationMemberRequest;
 import com.bizflow.backend.dto.OrganizationRequest;
 import com.bizflow.backend.dto.OrganizationResponse;
 import com.bizflow.backend.dto.OrganizationRoleUpdateRequest;
-import com.bizflow.backend.entity.User;
-import com.bizflow.backend.repository.UserRepository;
+import com.bizflow.backend.entity.OrganizationMember;
+import com.bizflow.backend.service.CurrentUserService;
 import com.bizflow.backend.service.OrganizationService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.bizflow.backend.entity.OrganizationMember;
 import java.util.List;
-
-import com.bizflow.backend.dto.OrganizationMemberRequest;
-
-import com.bizflow.backend.dto.OrganizationRoleUpdateRequest;
 
 @RestController
 @RequestMapping("/api/organizations")
 public class OrganizationController {
 
     private final OrganizationService organizationService;
-    private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     public OrganizationController(
             OrganizationService organizationService,
-            UserRepository userRepository) {
+            CurrentUserService currentUserService) {
 
         this.organizationService = organizationService;
-        this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping
@@ -39,64 +37,59 @@ public class OrganizationController {
             @Valid @RequestBody OrganizationRequest request,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return organizationService.createOrganization(
                 request,
-                user.getId()
+                currentUserId
+        );
+    }
+
+    @PostMapping("/{organizationId}/members")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrganizationMember addMember(
+            @PathVariable Long organizationId,
+            @Valid @RequestBody OrganizationMemberRequest request,
+            Authentication authentication) {
+
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
+
+        return organizationService.addMember(
+                organizationId,
+                request,
+                currentUserId
         );
     }
 
     @GetMapping("/{organizationId}/members")
-public List<OrganizationMember> getOrganizationMembers(
-        @PathVariable Long organizationId) {
+    public List<OrganizationMember> getOrganizationMembers(
+            @PathVariable Long organizationId,
+            Authentication authentication) {
 
-    return organizationService.getOrganizationMembers(
-            organizationId
-    );
-}
+        currentUserService.getCurrentUserId(authentication);
 
-@PostMapping("/{organizationId}/members")
-@ResponseStatus(HttpStatus.CREATED)
-public OrganizationMember addMember(
-        @PathVariable Long organizationId,
-        @Valid @RequestBody OrganizationMemberRequest request,
-        Authentication authentication) {
+        return organizationService.getOrganizationMembers(
+                organizationId
+        );
+    }
 
-    String email = authentication.getName();
+    @PutMapping("/{organizationId}/members/{userId}/role")
+    public OrganizationMember updateMemberRole(
+            @PathVariable Long organizationId,
+            @PathVariable Long userId,
+            @Valid @RequestBody OrganizationRoleUpdateRequest request,
+            Authentication authentication) {
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
-    return organizationService.addMember(
-            organizationId,
-            request,
-            user.getId()
-    );
-}
-
-@PutMapping("/{organizationId}/members/{targetUserId}/role")
-public OrganizationMember updateMemberRole(
-        @PathVariable Long organizationId,
-        @PathVariable Long targetUserId,
-        @Valid @RequestBody OrganizationRoleUpdateRequest request,
-        Authentication authentication) {
-
-    String email = authentication.getName();
-
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-    return organizationService.updateMemberRole(
-            organizationId,
-            targetUserId,
-            request,
-            user.getId()
-    );
-}
-
+        return organizationService.updateMemberRole(
+                organizationId,
+                userId,
+                request,
+                currentUserId
+        );
+    }
 }
