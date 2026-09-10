@@ -1,43 +1,42 @@
 package com.bizflow.backend.service;
 
+import com.bizflow.backend.dto.OrganizationMemberRequest;
 import com.bizflow.backend.dto.OrganizationRequest;
 import com.bizflow.backend.dto.OrganizationResponse;
 import com.bizflow.backend.dto.OrganizationRoleUpdateRequest;
 import com.bizflow.backend.entity.Organization;
 import com.bizflow.backend.entity.OrganizationMember;
 import com.bizflow.backend.entity.Role;
+import com.bizflow.backend.entity.User;
+import com.bizflow.backend.exception.ForbiddenException;
+import com.bizflow.backend.exception.ResourceNotFoundException;
 import com.bizflow.backend.repository.OrganizationMemberRepository;
 import com.bizflow.backend.repository.OrganizationRepository;
-import org.springframework.stereotype.Service;
+import com.bizflow.backend.repository.UserRepository;
 
-import com.bizflow.backend.entity.OrganizationMember;
-import com.bizflow.backend.repository.OrganizationMemberRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import com.bizflow.backend.dto.OrganizationMemberRequest;
-import com.bizflow.backend.entity.User;
-import com.bizflow.backend.repository.UserRepository;
-import com.bizflow.backend.exception.ForbiddenException;
-import com.bizflow.backend.exception.ResourceNotFoundException;
-
-import com.bizflow.backend.dto.OrganizationRoleUpdateRequest;
 @Service
 public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public OrganizationService(
-        OrganizationRepository organizationRepository,
-        OrganizationMemberRepository organizationMemberRepository,
-        UserRepository userRepository) {
+            OrganizationRepository organizationRepository,
+            OrganizationMemberRepository organizationMemberRepository,
+            UserRepository userRepository,
+            AuditLogService auditLogService) {
 
-    this.organizationRepository = organizationRepository;
-    this.organizationMemberRepository = organizationMemberRepository;
-    this.userRepository = userRepository;
-}
+        this.organizationRepository = organizationRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
+        this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
+    }
 
     public OrganizationResponse createOrganization(
             OrganizationRequest request,
@@ -58,58 +57,145 @@ public class OrganizationService {
 
         organizationMemberRepository.save(adminMember);
 
+        auditLogService.createLog(
+                currentUserId,
+                "ORGANIZATION_CREATED",
+                "ORGANIZATION",
+                savedOrganization.getId()
+        );
+
         return toResponse(savedOrganization);
     }
 
     public OrganizationMember addMember(
-        Long organizationId,
-        OrganizationMemberRequest request,
-        Long currentUserId) {
+            Long organizationId,
+            OrganizationMemberRequest request,
+            Long currentUserId) {
 
-    // Check organization exists
-    organizationRepository.findById(organizationId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Organization not found"));
+        // Check organization exists
+        organizationRepository.findById(organizationId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Organization not found"));
 
-    // Check current user's role
-    OrganizationMember currentMember =
-            organizationMemberRepository
-                    .findByOrganizationIdAndUserId(
-                            organizationId,
-                            currentUserId)
-                    .orElseThrow(() ->
-                            new ForbiddenException(
-                                    "You are not a member of this organization"));
+        // Check current user's role
+        OrganizationMember currentMember =
+                organizationMemberRepository
+                        .findByOrganizationIdAndUserId(
+                                organizationId,
+                                currentUserId)
+                        .orElseThrow(() ->
+                                new ForbiddenException(
+                                        "You are not a member of this organization"));
 
-    // Only ADMIN can add members
-    if (currentMember.getRole() != Role.ADMIN) {
-        throw new ForbiddenException(
-                "Only ADMIN can add organization members");
+        // Only ADMIN can add members
+        if (currentMember.getRole() != Role.ADMIN) {
+            throw new ForbiddenException(
+                    "Only ADMIN can add organization members");
+        }
+
+        // Check target user exists
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found"));
+
+        // Prevent duplicate membership
+        if (organizationMemberRepository
+                .existsByOrganizationIdAndUserId(
+                        organizationId,
+                        user.getId())) {
+
+            throw new ForbiddenException(
+                    "User is already a member of this organization");
+        }
+
+        // Create membership
+        OrganizationMember member =
+                new OrganizationMember(
+                        organizationId,
+                        user.getId(),
+                        request.getRole());
+
+        OrganizationMember savedMember =
+                organizationMemberRepository.save(member);
+
+        auditLogService.createLog(
+                currentUserId,
+                "MEMBER_ADDED",
+                "ORGANIZATION_MEMBER",
+                savedMember.getId()
+        );
+
+        return savedMember;
     }
 
-    // Check target user exists
-    User user = userRepository.findById(request.getUserId())
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("User not found"));
+    public List<OrganizationMember> getOrganizationMembers(
+            Long organizationId) {
 
-    // Prevent duplicate membership
-    if (organizationMemberRepository
-            .existsByOrganizationIdAndUserId(
-                    organizationId,
-                    user.getId())) {
+        organizationRepository.findById(organizationId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Organization not found"));
 
-        throw new ForbiddenException(
-                "User is already a member of this organization");
+        return organizationMemberRepository.findByOrganizationId(
+                organizationId
+        );
     }
 
-    // Create membership
-    OrganizationMember member = new OrganizationMember(
-            organizationId,
-            user.getId(),
-            request.getRole());
+    public OrganizationMember updateMemberRole(
+            Long organizationId,
+            Long targetUserId,
+            OrganizationRoleUpdateRequest request,
+            Long currentUserId) {
 
-    return organizationMemberRepository.save(member);
-}
+        // Check organization exists
+        organizationRepository.findById(organizationId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Organization not found"));
+
+        // Find the current user's membership
+        OrganizationMember currentMember =
+                organizationMemberRepository
+                        .findByOrganizationIdAndUserId(
+                                organizationId,
+                                currentUserId)
+                        .orElseThrow(() ->
+                                new ForbiddenException(
+                                        "You are not a member of this organization"));
+
+        // Only ADMIN can change roles
+        if (currentMember.getRole() != Role.ADMIN) {
+            throw new ForbiddenException(
+                    "Only ADMIN can update member roles");
+        }
+
+        // Find the target member
+        OrganizationMember targetMember =
+                organizationMemberRepository
+                        .findByOrganizationIdAndUserId(
+                                organizationId,
+                                targetUserId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Organization member not found"));
+
+        // Update the role
+        targetMember.setRole(request.getRole());
+
+        OrganizationMember updatedMember =
+                organizationMemberRepository.save(targetMember);
+
+        auditLogService.createLog(
+                currentUserId,
+                "ROLE_CHANGED",
+                "ORGANIZATION_MEMBER",
+                updatedMember.getId()
+        );
+
+        return updatedMember;
+    }
 
     private OrganizationResponse toResponse(
             Organization organization) {
@@ -120,58 +206,4 @@ public class OrganizationService {
                 organization.getCreatedAt()
         );
     }
-
-    public List<OrganizationMember> getOrganizationMembers(Long organizationId) {
-
-    organizationRepository.findById(organizationId)
-            .orElseThrow(() ->
-                    new RuntimeException("Organization not found"));
-
-    return organizationMemberRepository.findByOrganizationId(
-            organizationId
-    );
-}
-
-public OrganizationMember updateMemberRole(
-        Long organizationId,
-        Long targetUserId,
-        OrganizationRoleUpdateRequest request,
-        Long currentUserId) {
-
-    // Check organization exists
-    organizationRepository.findById(organizationId)
-            .orElseThrow(() ->
-                    new ResourceNotFoundException("Organization not found"));
-
-    // Find the current user's membership
-    OrganizationMember currentMember =
-            organizationMemberRepository
-                    .findByOrganizationIdAndUserId(
-                            organizationId,
-                            currentUserId)
-                    .orElseThrow(() ->
-                            new ForbiddenException(
-                                    "You are not a member of this organization"));
-
-    // Only ADMIN can change roles
-    if (currentMember.getRole() != Role.ADMIN) {
-        throw new ForbiddenException(
-                "Only ADMIN can update member roles");
-    }
-
-    // Find the target member
-    OrganizationMember targetMember =
-            organizationMemberRepository
-                    .findByOrganizationIdAndUserId(
-                            organizationId,
-                            targetUserId)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException(
-                                    "Organization member not found"));
-
-    // Update the role
-    targetMember.setRole(request.getRole());
-
-    return organizationMemberRepository.save(targetMember);
-}
 }

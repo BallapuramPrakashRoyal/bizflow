@@ -18,14 +18,17 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final AuditLogService auditLogService;
 
     public ProjectService(
-            ProjectRepository projectRepository,
-            OrganizationMemberRepository organizationMemberRepository) {
+        ProjectRepository projectRepository,
+        OrganizationMemberRepository organizationMemberRepository,
+        AuditLogService auditLogService) {
 
-        this.projectRepository = projectRepository;
-        this.organizationMemberRepository = organizationMemberRepository;
-    }
+    this.projectRepository = projectRepository;
+    this.organizationMemberRepository = organizationMemberRepository;
+    this.auditLogService = auditLogService;
+}
 
     public ProjectResponse createProject(
             ProjectRequest request,
@@ -48,7 +51,14 @@ public class ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        return toResponse(savedProject);
+        auditLogService.createLog(
+        currentUserId,
+        "PROJECT_CREATED",
+        "PROJECT",
+        savedProject.getId()
+        );
+
+return toResponse(savedProject);
     }
 
     public List<ProjectResponse> getAllProjects(Long currentUserId) {
@@ -104,7 +114,14 @@ public class ProjectService {
 
         Project updatedProject = projectRepository.save(project);
 
-        return toResponse(updatedProject);
+        auditLogService.createLog(
+        currentUserId,
+        "PROJECT_UPDATED",
+        "PROJECT",
+        updatedProject.getId()
+        );
+
+return toResponse(updatedProject);
     }
 
     public void deleteProject(

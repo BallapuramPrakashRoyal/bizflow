@@ -8,6 +8,7 @@ import com.bizflow.backend.exception.ForbiddenException;
 import com.bizflow.backend.exception.ResourceNotFoundException;
 import com.bizflow.backend.repository.CommentRepository;
 import com.bizflow.backend.repository.TaskRepository;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +18,16 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final TaskRepository taskRepository;
+    private final AuditLogService auditLogService;
 
     public CommentService(
             CommentRepository commentRepository,
-            TaskRepository taskRepository) {
+            TaskRepository taskRepository,
+            AuditLogService auditLogService) {
 
         this.commentRepository = commentRepository;
         this.taskRepository = taskRepository;
+        this.auditLogService = auditLogService;
     }
 
     public CommentResponse createComment(
@@ -48,6 +52,13 @@ public class CommentService {
         );
 
         Comment savedComment = commentRepository.save(comment);
+
+        auditLogService.createLog(
+                currentUserId,
+                "COMMENT_CREATED",
+                "COMMENT",
+                savedComment.getId()
+        );
 
         return toResponse(savedComment);
     }
