@@ -3,14 +3,12 @@ package com.bizflow.backend.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import com.bizflow.backend.exception.ResourceNotFoundException;
-import com.bizflow.backend.exception.ForbiddenException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,30 +19,64 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid email or password"));
+                .body(Map.of(
+                        "error",
+                        "Invalid email or password"
+                ));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-public ResponseEntity<Map<String, String>> handleResourceNotFound(
-        ResourceNotFoundException ex) {
+    public ResponseEntity<Map<String, String>> handleResourceNotFound(
+            ResourceNotFoundException exception) {
 
-    Map<String, String> error = new HashMap<>();
-    error.put("error", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error",
+                        exception.getMessage()
+                ));
+    }
 
-    return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
-            .body(error);
-}
-@ExceptionHandler(ForbiddenException.class)
-public ResponseEntity<Map<String, String>> handleForbidden(
-        ForbiddenException ex) {
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, String>> handleForbidden(
+            ForbiddenException exception) {
 
-    Map<String, String> error = new HashMap<>();
-    error.put("error", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                        "error",
+                        exception.getMessage()
+                ));
+    }
 
-    return ResponseEntity
-            .status(HttpStatus.FORBIDDEN)
-            .body(error);
-}
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationErrors(
+            MethodArgumentNotValidException exception) {
 
+        String message = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .orElse("Invalid request");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error",
+                        message
+                ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(
+            Exception exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "error",
+                        "An unexpected error occurred"
+                ));
+    }
 }
