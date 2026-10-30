@@ -7,7 +7,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -66,6 +65,15 @@ public class GlobalExceptionHandler {
                         "error",
                         message
                 ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleConflict(
+            IllegalArgumentException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("error", exception.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

@@ -46,6 +46,8 @@ public class TaskService {
 
         checkOrganizationAccess(project, currentUserId);
 
+        validateAssignee(project, request.getAssignedUserId());
+
         if (!project.getOwnerId().equals(currentUserId)) {
             throw new ForbiddenException(
                     "You are not allowed to create a task in this project");
@@ -112,6 +114,7 @@ public class TaskService {
                         new ResourceNotFoundException("Project not found"));
 
         checkOrganizationAccess(project, currentUserId);
+        validateAssignee(project, request.getAssignedUserId());
 
         if (!project.getOwnerId().equals(currentUserId)) {
             throw new ForbiddenException(
@@ -201,6 +204,15 @@ public class TaskService {
                         project.getOrganizationId(),
                         currentUserId
                 );
+    }
+
+    private void validateAssignee(Project project, Long assignedUserId) {
+        if (assignedUserId != null && !organizationMemberRepository
+                .existsByOrganizationIdAndUserId(
+                        project.getOrganizationId(), assignedUserId)) {
+            throw new ForbiddenException(
+                    "The assigned user is not a member of this organization");
+        }
     }
 
     private TaskResponse toResponse(Task task) {

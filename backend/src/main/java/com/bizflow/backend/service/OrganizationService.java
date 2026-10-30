@@ -69,6 +69,17 @@ public class OrganizationService {
         return toResponse(savedOrganization);
     }
 
+    public List<OrganizationResponse> getOrganizations(Long currentUserId) {
+        return organizationMemberRepository.findByUserId(currentUserId)
+                .stream()
+                .map(OrganizationMember::getOrganizationId)
+                .distinct()
+                .map(organizationRepository::findById)
+                .flatMap(java.util.Optional::stream)
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public OrganizationMember addMember(
             Long organizationId,
@@ -81,7 +92,7 @@ public class OrganizationService {
                         new ResourceNotFoundException(
                                 "Organization not found"));
 
-        // Check current user's role
+        // Check current user's membership
         OrganizationMember currentMember =
                 organizationMemberRepository
                         .findByOrganizationIdAndUserId(
@@ -134,12 +145,26 @@ public class OrganizationService {
     }
 
     public List<OrganizationMember> getOrganizationMembers(
-            Long organizationId) {
+            Long organizationId,
+            Long currentUserId) {
 
+        // Check organization exists
         organizationRepository.findById(organizationId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Organization not found"));
+
+        // Check current user's membership
+        boolean isMember =
+                organizationMemberRepository
+                        .existsByOrganizationIdAndUserId(
+                                organizationId,
+                                currentUserId);
+
+        if (!isMember) {
+            throw new ForbiddenException(
+                    "You are not a member of this organization");
+        }
 
         return organizationMemberRepository.findByOrganizationId(
                 organizationId

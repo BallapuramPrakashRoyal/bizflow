@@ -8,6 +8,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --navy-950: #0b1730;
+  --navy-900: #101f3d;
+  --primary: #3b63f3;
+  --primary-soft: #edf2ff;
+  --surface: #ffffff;
+  --canvas: #f5f7fb;
+  --line: #e5e9f2;
+  --text: #17233d;
+  --muted: #71809b;
+  --radius-lg: 18px;
+  --shadow-card: 0 12px 32px rgba(31, 48, 86, 0.06);
 }
 
 * {

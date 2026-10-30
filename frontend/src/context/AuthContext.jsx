@@ -47,12 +47,18 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
+    const register = async (registrationData) => {
+        const response = await api.post("/auth/register", registrationData);
+        return response.data;
+    };
+
     return (
         <AuthContext.Provider
             value={{
                 user,
                 loading,
                 login,
+                register,
                 logout,
                 isAuthenticated: !!user,
             }}

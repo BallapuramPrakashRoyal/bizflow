@@ -3,6 +3,7 @@ package com.bizflow.backend.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -11,9 +12,16 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String secretKey = System.getenv("JWT_SECRET");
+    private final String secretKey;
 
     private final long expirationTime = 1000 * 60 * 60; // 1 hour
+
+    public JwtService(@Value("${app.jwt.secret:}") String configuredSecret) {
+        this.secretKey = configuredSecret;
+        if (secretKey.length() < 32) {
+            throw new IllegalStateException("app.jwt.secret must contain at least 32 characters");
+        }
+    }
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(

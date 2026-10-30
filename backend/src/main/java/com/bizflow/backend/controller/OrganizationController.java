@@ -46,6 +46,14 @@ public class OrganizationController {
         );
     }
 
+    @GetMapping
+    public List<OrganizationResponse> getOrganizations(
+            Authentication authentication) {
+
+        return organizationService.getOrganizations(
+                currentUserService.getCurrentUserId(authentication));
+    }
+
     @PostMapping("/{organizationId}/members")
     @ResponseStatus(HttpStatus.CREATED)
     public OrganizationMember addMember(
@@ -68,10 +76,12 @@ public class OrganizationController {
             @PathVariable Long organizationId,
             Authentication authentication) {
 
-        currentUserService.getCurrentUserId(authentication);
+        Long currentUserId =
+                currentUserService.getCurrentUserId(authentication);
 
         return organizationService.getOrganizationMembers(
-                organizationId
+                organizationId,
+                currentUserId
         );
     }
 

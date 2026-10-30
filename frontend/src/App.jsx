@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import DashboardHome from "./pages/DashboardHome";
+import WorkspacePage from "./pages/WorkspacePage";
+import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -48,10 +50,16 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardHome />
           </ProtectedRoute>
         }
       />
+
+      <Route path="/organizations" element={<ProtectedRoute><WorkspacePage section="organizations" /></ProtectedRoute>} />
+      <Route path="/projects" element={<ProtectedRoute><WorkspacePage section="projects" /></ProtectedRoute>} />
+      <Route path="/tasks" element={<ProtectedRoute><WorkspacePage section="tasks" /></ProtectedRoute>} />
+      <Route path="/audit-logs" element={<ProtectedRoute><WorkspacePage section="activity" /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
       <Route
         path="/"

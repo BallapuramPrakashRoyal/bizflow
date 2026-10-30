@@ -11,6 +11,8 @@ import com.bizflow.backend.dto.LoginResponse;
 import com.bizflow.backend.security.JwtService;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import java.util.Locale;
+
 @Service
 public class UserService {
 
@@ -30,11 +32,16 @@ public class UserService {
 
     public UserResponse createUser(UserRequest request) {
 
+        String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("An account with this email already exists");
+        }
+
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
         User user = new User(
-                request.getName(),
-                request.getEmail(),
+                request.getName().trim(),
+                email,
                 hashedPassword
         );
 
@@ -49,7 +56,7 @@ public class UserService {
     }
     public LoginResponse login(LoginRequest request) {
 
-    User user = userRepository.findByEmail(request.getEmail())
+    User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase(Locale.ROOT))
             .orElseThrow(() ->
                     new BadCredentialsException("Invalid email or password"));
 
@@ -68,7 +75,7 @@ public UserResponse getCurrentUser(String email) {
 
     User user = userRepository.findByEmail(email)
             .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+                    new com.bizflow.backend.exception.ResourceNotFoundException("User not found"));
 
     return new UserResponse(
             user.getId(),
@@ -77,4 +84,19 @@ public UserResponse getCurrentUser(String email) {
             user.getCreatedAt()
     );
 }
+
+public UserResponse getUserByEmail(String email) {
+
+    User user = userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
+            .orElseThrow(() ->
+                    new com.bizflow.backend.exception.ResourceNotFoundException("User not found"));
+
+    return new UserResponse(
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            user.getCreatedAt()
+    );
+}
+
 }

@@ -10,6 +10,9 @@
 .env.*
 **/.env
 **/.env.*
+**/data/
+*.mv.db
+*.trace.db
 
 # IDE files
 .idea/

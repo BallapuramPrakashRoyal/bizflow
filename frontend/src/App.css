@@ -827,6 +827,184 @@ input {
     grid-template-columns: 1fr;
   }
 
+}
+
+  /* SaaS application shell */
+  .app-shell {
+    min-height: 100vh;
+    background: var(--canvas);
+    color: var(--text);
+  }
+
+  .app-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: 252px;
+    padding: 28px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    background: var(--navy-950);
+    color: #dbe6ff;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 12px 42px;
+    color: #fff;
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .sidebar-brand .brand-mark {
+    width: 37px;
+    height: 37px;
+    border-radius: 11px;
+    font-size: 16px;
+  }
+
+  .sidebar-label {
+    padding: 0 13px 11px;
+    color: #7184a8;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-nav { display: grid; gap: 5px; }
+  .sidebar-link {
+    min-height: 44px;
+    padding: 0 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 10px;
+    color: #aab9d5;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color .2s, background .2s;
+  }
+  .sidebar-link:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .sidebar-link.active { background: #243b70; color: #fff; box-shadow: inset 3px 0 var(--primary); }
+  .sidebar-link-icon { width: 18px; color: #8fa6d3; font-size: 17px; text-align: center; }
+  .sidebar-link.active .sidebar-link-icon { color: #88a7ff; }
+  .sidebar-footer { margin-top: auto; }
+  .sidebar-user {
+    margin-top: 18px;
+    padding: 14px 8px 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(255,255,255,.1);
+  }
+  .avatar, .profile-avatar {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #d9e4ff;
+    color: #3154be;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .avatar { width: 32px; height: 32px; }
+  .sidebar-user-copy { min-width: 0; display: grid; gap: 3px; }
+  .sidebar-user-copy strong, .sidebar-user-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-user-copy strong { color: #f4f7ff; font-size: 12px; }
+  .sidebar-user-copy span { color: #91a2c2; font-size: 10px; }
+  .logout-icon, .notification-button, .menu-button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .logout-icon { margin-left: auto; padding: 5px; color: #91a2c2; font-size: 18px; }
+  .logout-icon:hover { color: #ff9eae; }
+  .app-main { min-height: 100vh; margin-left: 252px; }
+  .app-topbar {
+    height: 82px;
+    padding: 0 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,.88);
+  }
+  .topbar-kicker, .page-eyebrow { margin: 0 0 5px; color: var(--primary); font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+  .app-topbar h1 { margin: 0; color: var(--text); font-size: 16px; letter-spacing: -.2px; }
+  .topbar-actions, .topbar-user { display: flex; align-items: center; gap: 12px; }
+  .topbar-user { color: #44516b; font-size: 12px; font-weight: 700; }
+  .notification-button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px; color: #64748b; font-size: 20px; }
+  .menu-button { display: none; font-size: 22px; }
+  .app-content { max-width: 1280px; margin: 0 auto; padding: 42px 44px 64px; }
+  .page-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 30px; }
+  .page-heading h2 { margin: 0; color: var(--text); font-size: 30px; letter-spacing: -1px; }
+  .page-heading > div > p:last-child { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
+  .date-pill, .muted-label { color: var(--muted); font-size: 12px; }
+  .date-pill { padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+  .saas-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .saas-stat-card, .overview-card, .profile-card, .state-card { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-card); }
+  .saas-stat-card { position: relative; overflow: hidden; padding: 21px; }
+  .saas-stat-card::after { content: ""; position: absolute; right: -18px; bottom: -28px; width: 90px; height: 90px; border-radius: 50%; opacity: .12; background: currentColor; }
+  .saas-stat-card.blue { color: #3b63f3; } .saas-stat-card.violet { color: #7b61df; } .saas-stat-card.amber { color: #d89022; } .saas-stat-card.green { color: #219a6b; }
+  .saas-stat-heading { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .stat-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; opacity: .75; }
+  .saas-stat-card strong { display: block; margin: 18px 0 6px; color: var(--text); font-size: 31px; letter-spacing: -1px; }
+  .saas-stat-card small { color: var(--muted); font-size: 11px; }
+  .overview-card { padding: 26px; }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 27px; }
+  .section-heading h3 { margin: 0; font-size: 18px; letter-spacing: -.3px; }
+  .status-overview { display: grid; gap: 19px; }
+  .status-row { display: grid; grid-template-columns: 150px minmax(120px, 1fr) 42px; align-items: center; gap: 16px; }
+  .status-row-label { display: flex; align-items: center; gap: 9px; color: #52617a; font-size: 12px; }
+  .status-row-label strong { margin-left: auto; color: var(--text); }
+  .status-marker { width: 8px; height: 8px; border-radius: 50%; }
+  .status-marker.blue, .status-fill.blue { background: #4f7cff; } .status-marker.violet, .status-fill.violet { background: #8d75ec; } .status-marker.amber, .status-fill.amber { background: #e5a342; } .status-marker.green, .status-fill.green { background: #38b783; } .status-marker.red, .status-fill.red { background: #e26b78; }
+  .status-track { height: 8px; overflow: hidden; border-radius: 99px; background: #eef1f6; }
+  .status-fill { display: block; height: 100%; border-radius: inherit; transition: width .4s ease; }
+  .status-row > small { color: var(--muted); font-size: 11px; text-align: right; }
+  .state-card { min-height: 150px; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 13px; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #dbe3f4; border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .profile-card { max-width: 620px; padding: 30px; display: flex; align-items: center; gap: 18px; }
+  .profile-avatar { width: 62px; height: 62px; font-size: 20px; }
+  .profile-card h3 { margin: 0 0 6px; font-size: 18px; }
+  .profile-card p { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
+  .profile-card small { color: #98a5bb; font-size: 11px; }
+  .sidebar-backdrop { display: none; }
+
+  @media (max-width: 900px) {
+    .app-sidebar { width: 220px; }
+    .app-main { margin-left: 220px; }
+    .app-topbar { padding: 0 24px; }
+    .app-content { padding: 32px 24px 50px; }
+    .saas-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .app-sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+    .app-sidebar.is-open { transform: translateX(0); }
+    .app-main { margin-left: 0; }
+    .app-topbar { height: 70px; padding: 0 18px; gap: 13px; }
+    .menu-button { display: block; color: var(--text); }
+    .topbar-user span, .notification-button { display: none; }
+    .sidebar-backdrop.is-visible { display: block; position: fixed; inset: 0; z-index: 19; border: 0; background: rgba(6, 15, 33, .45); }
+    .app-content { padding: 28px 16px 42px; }
+    .page-heading { display: block; }
+    .page-heading h2 { font-size: 25px; }
+    .date-pill { display: inline-block; margin-top: 18px; }
+    .saas-stats-grid { gap: 10px; }
+    .saas-stat-card { padding: 16px; }
+    .saas-stat-card strong { margin-top: 14px; font-size: 26px; }
+    .overview-card { padding: 18px 15px; }
+    .status-row { grid-template-columns: 110px minmax(70px, 1fr) 34px; gap: 8px; }
+    .profile-card { padding: 22px; }
+  }
+
+@media (max-width: 420px) {
   .task-stats {
     grid-template-columns: 1fr;
   }

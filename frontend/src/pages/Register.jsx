@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/api";
+import { useAuth } from "../context/AuthContext";
 
 function Register() {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -37,7 +38,7 @@ function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", {
+      await register({
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,

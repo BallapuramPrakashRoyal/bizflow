@@ -2,7 +2,6 @@ package com.bizflow.backend.service;
 
 import com.bizflow.backend.entity.AuditLog;
 import com.bizflow.backend.entity.Comment;
-import com.bizflow.backend.entity.Organization;
 import com.bizflow.backend.entity.OrganizationMember;
 import com.bizflow.backend.entity.Project;
 import com.bizflow.backend.entity.Task;

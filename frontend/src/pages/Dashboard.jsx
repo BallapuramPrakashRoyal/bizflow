@@ -193,7 +193,7 @@ function Dashboard() {
   );
 }
 
-function Workspace({ activeSection, currentUser, onDataChange }) {
+export function Workspace({ activeSection, currentUser, onDataChange }) {
   const [organizations, setOrganizations] = useState([]);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
