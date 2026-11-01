@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BizFlow · Workflow designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070B1F;--ink:#FFFFFF;--muted:#CDD3F0;
+  --glass:rgba(255,255,255,.07);--glass-edge:rgba(255,255,255,.2);
+  --field:rgba(255,255,255,.07);--field-edge:rgba(255,255,255,.16);
+  --a1:#7C5CFF;--a2:#FF6B8A;--a3:#3EF0C0;--err:#FF7A8E;
+  --shadow:rgba(0,0,0,.5);--blob:.55;--dot:rgba(255,255,255,.2);
+  --run:linear-gradient(120deg,#3EF0C0,#9CF7DD);--run-ink:#0A0F2B;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg:#ECEEFF;--ink:#080C28;--muted:#363E6E;
+    --glass:rgba(255,255,255,.55);--glass-edge:rgba(255,255,255,.95);
+    --field:rgba(255,255,255,.7);--field-edge:rgba(90,80,200,.2);
+    --err:#D6304F;--shadow:rgba(70,55,160,.28);--blob:.4;--dot:rgba(40,40,120,.22);
+    --run:linear-gradient(120deg,#7C5CFF,#FF6B8A);--run-ink:#fff;color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#ECEEFF;--ink:#080C28;--muted:#363E6E;
+  --glass:rgba(255,255,255,.55);--glass-edge:rgba(255,255,255,.95);
+  --field:rgba(255,255,255,.7);--field-edge:rgba(90,80,200,.2);
+  --err:#D6304F;--shadow:rgba(70,55,160,.28);--blob:.4;--dot:rgba(40,40,120,.22);
+  --run:linear-gradient(120deg,#7C5CFF,#FF6B8A);--run-ink:#fff;color-scheme:light;
+}
+*{box-sizing:border-box;margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.45 "DM Sans",system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+.stage{position:fixed;inset:0;z-index:0;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:var(--blob)}
+.b1{width:48vmax;height:48vmax;background:var(--a1);left:-14vmax;top:-18vmax;animation:d1 24s ease-in-out infinite alternate}
+.b2{width:40vmax;height:40vmax;background:var(--a2);right:-14vmax;bottom:-16vmax;animation:d2 28s ease-in-out infinite alternate}
+@keyframes d1{to{transform:translate(16vmax,10vmax)}}
+@keyframes d2{to{transform:translate(-14vmax,-8vmax)}}
+.glass{background:var(--glass);border:1px solid var(--glass-edge);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);box-shadow:0 30px 70px -34px var(--shadow),inset 0 1px 0 rgba(255,255,255,.28)}
+
+.app{position:relative;z-index:1;height:100%;display:grid;grid-template-columns:214px minmax(0,1fr) 290px;grid-template-rows:auto minmax(0,1fr);gap:12px;padding:12px}
+.top{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font:800 19px "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}
+.logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,var(--a1),var(--a2));display:grid;place-items:center;box-shadow:0 8px 22px -8px var(--a1)}
+.name{flex:1;min-width:140px;max-width:320px;background:var(--field);border:1px solid var(--field-edge);border-radius:12px;color:var(--ink);font:600 14.5px "DM Sans",sans-serif;padding:9px 12px;outline:none}
+.name:focus,.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--a3)}
+.acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:38px;padding:0 14px;border-radius:12px;border:1px solid var(--field-edge);background:var(--field);color:var(--ink);font:600 13.5px "DM Sans",sans-serif;cursor:pointer;transition:transform .2s,border-color .2s}
+.btn:hover{transform:translateY(-1px);border-color:var(--a3)}
+.btn.run{border:0;color:var(--run-ink);background:var(--run)}
+.btn.run:disabled{opacity:.6;cursor:progress}
+.btn.danger{width:100%;margin-top:10px;color:var(--err);border-color:color-mix(in srgb,var(--err) 50%,transparent)}
+:focus-visible{outline:2px solid var(--a3);outline-offset:2px}
+
+h3{font:700 15px "Bricolage Grotesque",sans-serif;letter-spacing:-.01em;margin-bottom:10px}
+.pal{padding:14px;border-radius:22px;overflow:auto}
+.pi{display:flex;gap:10px;align-items:center;width:100%;padding:9px;border-radius:14px;border:1px solid transparent;background:none;color:var(--ink);cursor:grab;text-align:left;margin-bottom:6px;font:600 14px "DM Sans",sans-serif;transition:background .2s,border-color .2s}
+.pi:hover{background:var(--field);border-color:var(--field-edge)}
+.pi small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 24%,transparent);color:var(--c)}
+.t-trigger{--c:#3EF0C0}.t-action{--c:#8F7BFF}.t-condition{--c:#FFC247}.t-approval{--c:#FF6B8A}.t-delay{--c:#4DB8FF}.t-notify{--c:#D58BFF}
+:root:not([data-theme="dark"]) .t-trigger{--c:#0FA37F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .t-trigger{--c:#3EF0C0}}
+
+.canvas{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--glass-edge);background-color:color-mix(in srgb,var(--bg) 55%,transparent);background-image:radial-gradient(var(--dot) 1.3px,transparent 1.4px);background-size:24px 24px;touch-action:none;cursor:grab}
+.canvas:active{cursor:grabbing}
+.world{position:absolute;left:0;top:0;transform-origin:0 0}
+#edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+.edge{fill:none;stroke:color-mix(in srgb,var(--ink) 50%,transparent);stroke-width:2.2;stroke-linecap:round}
+.edge.sel{stroke:var(--a3);stroke-width:3.4}
+.edge.live{stroke:var(--a3);stroke-width:3.4;stroke-dasharray:8 8;animation:fl .45s linear infinite}
+.edge.tmp{stroke:var(--a3);stroke-dasharray:6 6}
+.hit{fill:none;stroke:transparent;stroke-width:20;pointer-events:stroke;cursor:pointer}
+@keyframes fl{to{stroke-dashoffset:-16}}
+.node{position:absolute;left:0;top:0;width:208px;height:78px;border-radius:18px;padding:0 30px 0 14px;display:flex;align-items:center;gap:11px;background:var(--glass);border:1px solid var(--glass-edge);backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);box-shadow:0 18px 40px -22px var(--shadow);cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;transition:box-shadow .25s,border-color .25s}
+.node.t-condition{padding-right:44px}
+.node.sel{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 32%,transparent),0 18px 40px -22px var(--shadow)}
+.node.run{border-color:var(--c);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 40%,transparent),0 0 36px var(--c)}
+.node.ok{border-color:var(--c)}
+.tx{min-width:0}
+.tx b{display:block;font:700 14.5px/1.25 "Bricolage Grotesque",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.port{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2.5px solid var(--c);cursor:crosshair;transition:transform .15s,background .15s}
+.port::after{content:"";position:absolute;inset:-8px}
+.port.in{left:-7px;top:32px}.port.out{right:-7px}
+.port:hover,.node.hot .port.in{transform:scale(1.4);background:var(--c)}
+.pl{position:absolute;right:15px;font-size:10.5px;font-weight:600;line-height:14px;color:var(--muted);pointer-events:none}
+
+.empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:var(--muted);pointer-events:none;padding:20px}
+.empty b{font:700 20px "Bricolage Grotesque",sans-serif;color:var(--ink);display:block;margin-bottom:4px}
+.hud{position:absolute;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.hud>*{pointer-events:auto}
+.chip{padding:8px 14px;border-radius:12px;font-size:12.5px;color:var(--muted)}
+.zoom{display:flex;border-radius:12px;overflow:hidden}
+.zoom button{min-width:40px;height:36px;border:0;background:none;color:var(--ink);font:600 14px "DM Sans",sans-serif;cursor:pointer;padding:0 8px}
+.zoom button:hover{background:var(--field)}
+.log{position:absolute;left:14px;bottom:62px;width:min(350px,calc(100% - 28px));max-height:210px;overflow:auto;border-radius:18px;padding:12px 14px;font-size:13px}
+.log[hidden]{display:none}
+.lh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.lh b{font:700 14px "Bricolage Grotesque",sans-serif}
+.lh button{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
+.log ol{list-style:none;padding:0}
+.log li{padding:3px 0;color:var(--ink)}
+.log li::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--a3);margin-right:8px}
+
+.insp{padding:16px;border-radius:22px;overflow:auto}
+.insp p{color:var(--muted)}
+.f{display:block;margin:12px 0}
+.f span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.f input,.f select,.f textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--field-edge);background:var(--field);color:var(--ink);font:500 14px "DM Sans",sans-serif;outline:none}
+.f textarea{resize:vertical;min-height:70px}
+.m-only{display:none;width:100%;margin-top:8px}
+
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(5,8,25,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:16px}
+.modal[hidden]{display:none}
+.mbox{width:min(640px,100%);border-radius:24px;padding:20px;background:var(--bg);border:1px solid var(--glass-edge)}
+.mbox textarea{width:100%;height:280px;margin:10px 0 14px;padding:12px;border-radius:14px;border:1px solid var(--field-edge);background:var(--field);color:var(--ink);font:12.5px/1.5 ui-monospace,Menlo,monospace;outline:none;resize:vertical}
+.mrow{display:flex;gap:8px;flex-wrap:wrap}
+.mmsg{color:var(--muted);margin-left:auto;align-self:center;font-size:13px}
+
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);padding:8px;gap:8px}
+  .top{grid-column:auto;padding:8px 10px;gap:8px}
+  .acts{margin-left:0;width:100%}.acts .btn{flex:1;padding:0 8px}
+  .name{max-width:none}
+  .pal{display:flex;gap:6px;overflow-x:auto;padding:8px;border-radius:18px}
+  .pal h3{display:none}
+  .pi{width:auto;flex:none;margin:0;cursor:pointer;padding:6px 10px 6px 6px}.pi small{display:none}
+  .insp{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-height:48vh;z-index:6;transform:translateY(140%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  .app.has-sel .insp{transform:none}
+  .m-only{display:block}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+<div class="stage" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div></div>
+
+<div class="app" id="app">
+  <header class="top glass">
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9a4 4 0 0 1 0 8H8"/><path d="m11 12-3 3 3 3"/></svg></span>BizFlow</div>
+    <input class="name" id="wfname" value="Order to invoice" aria-label="Workflow name">
+    <div class="acts">
+      <button class="btn" id="b-sample">Sample</button>
+      <button class="btn" id="b-clear">Clear</button>
+      <button class="btn" id="b-export">Export</button>
+      <button class="btn run" id="b-run">Run test</button>
+    </div>
+  </header>
+
+  <aside class="pal glass" id="pal"><h3>Steps</h3></aside>
+
+  <section class="canvas" id="canvas">
+    <div class="world" id="world"><svg id="edges"></svg><div id="nodes"></div></div>
+    <div class="empty" id="empty"><div><b>Start with a trigger</b>Drag a step from the left, or click one to add it.</div></div>
+    <div class="log glass" id="log" hidden></div>
+    <div class="hud">
+      <span class="chip glass" id="stat"></span>
+      <div class="zoom glass"><button id="z-out" aria-label="Zoom out">−</button><button id="z-fit">Fit</button><button id="z-in" aria-label="Zoom in">+</button></div>
+    </div>
+  </section>
+
+  <aside class="insp glass" id="insp"></aside>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="mbox" role="dialog" aria-label="Workflow JSON">
+    <h3>Workflow JSON</h3>
+    <p style="color:var(--muted)">Copy this into your backend, or paste a saved workflow and load it.</p>
+    <textarea id="json" spellcheck="false"></textarea>
+    <div class="mrow">
+      <button class="btn run" id="m-copy">Copy JSON</button>
+      <button class="btn" id="m-load">Load from JSON</button>
+      <button class="btn" id="m-close">Close</button>
+      <span class="mmsg" id="m-msg"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const W=208,H=78,canvas=$('#canvas'),world=$('#world'),app=$('#app');
+const ICON={trigger:'M13 2L4 14h7l-1 8 9-12h-7z',action:'M7 4l13 8-13 8z',condition:'M12 3l9 9-9 9-9-9z',approval:'M5 12.5l4.5 4.5L19 7.5',delay:'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',notify:'M4 6h16v12H4zM4 7l8 6 8-6'};
+const svgi=t=>'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="'+ICON[t]+'"/></svg>';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const T={
+  trigger:{label:'Trigger',hint:'Starts the flow',title:'New order',cfg:{event:'New order'},f:[['event','When this happens','sel',['New order','Form submitted','Every day at 9:00','Webhook received']]],sub:c=>c.event,say:c=>'Started by: '+c.event},
+  action:{label:'Action',hint:'Does the work',title:'Create invoice',cfg:{act:'Create invoice'},f:[['act','Do this','sel',['Create invoice','Update record','Send to CRM','Generate report']]],sub:c=>c.act,say:c=>'Ran: '+c.act},
+  condition:{label:'Condition',hint:'Splits yes or no',title:'Order over 500?',cfg:{field:'Order total',op:'greater than',val:'500',test:'Yes'},f:[['field','Check','txt'],['op','Is','sel',['greater than','less than','equal to']],['val','Value','txt'],['test','Test run result','sel',['Yes','No']]],sub:c=>c.field+' '+c.op+' '+c.val,say:c=>'Checked '+c.field+' '+c.op+' '+c.val+': '+c.test},
+  approval:{label:'Approval',hint:'Waits for a person',title:'Manager approval',cfg:{who:'Finance manager',sla:'24'},f:[['who','Approver','txt'],['sla','Respond within (hours)','num']],sub:c=>c.who+', within '+c.sla+' h',say:c=>'Approved by '+c.who},
+  delay:{label:'Delay',hint:'Pauses the flow',title:'Wait',cfg:{n:'1',unit:'days'},f:[['n','Wait for','num'],['unit','Unit','sel',['minutes','hours','days']]],sub:c=>c.n+' '+c.unit,say:c=>'Waited '+c.n+' '+c.unit},
+  notify:{label:'Notify',hint:'Sends a message',title:'Notify team',cfg:{ch:'Slack',msg:'New invoice is ready.'},f:[['ch','Channel','sel',['Email','Slack','SMS']],['msg','Message','area']],sub:c=>c.ch+': '+c.msg,say:c=>'Sent '+c.ch+' message'}
+};
+let nodes=[],edges=[],sel=null,view={x:40,y:40,k:1},tmp='',running=false;
+const byId=id=>nodes.find(n=>n.id===id);
+const snap=v=>Math.round(v/12)*12;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const uniq=(pre,list)=>{let i=1;while(list.some(x=>x.id===pre+i))i++;return pre+i};
+const outPos=(n,p)=>({x:n.x+W,y:n.y+(n.type==='condition'?(p==='no'?52:26):39)});
+const inPos=n=>({x:n.x,y:n.y+39});
+const curve=(a,b)=>{const d=Math.max(60,Math.abs(b.x-a.x)/2);return 'M'+a.x+' '+a.y+'C'+(a.x+d)+' '+a.y+' '+(b.x-d)+' '+b.y+' '+b.x+' '+b.y};
+
+/* palette */
+const pal=$('#pal');
+Object.keys(T).forEach(t=>{
+  const b=document.createElement('button');b.className='pi t-'+t;b.draggable=true;b.dataset.t=t;
+  b.innerHTML='<span class="ic">'+svgi(t)+'</span><span>'+T[t].label+'<small>'+T[t].hint+'</small></span>';
+  b.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',t);e.dataTransfer.effectAllowed='copy'});
+  b.addEventListener('click',()=>{const r=canvas.getBoundingClientRect(),j=(nodes.length%5)*18;
+    addNode(t,(r.width/2-view.x)/view.k-W/2+j,(r.height/2-view.y)/view.k-H/2+j)});
+  pal.appendChild(b);
+});
+canvas.addEventListener('dragover',e=>e.preventDefault());
+canvas.addEventListener('drop',e=>{e.preventDefault();const t=e.dataTransfer.getData('text/plain');if(!T[t])return;const p=toWorld(e);addNode(t,p.x-W/2,p.y-H/2)});
+
+/* rendering */
+function nodeHTML(n){
+  const s=sel&&sel.k==='n'&&sel.id===n.id;
+  const outs=n.type==='condition'
+    ?'<i class="port out" data-p="yes" style="top:19px"></i><span class="pl" style="top:19px">Yes</span><i class="port out" data-p="no" style="top:45px"></i><span class="pl" style="top:45px">No</span>'
+    :'<i class="port out" data-p="out" style="top:32px"></i>';
+  return '<div class="node t-'+n.type+(s?' sel':'')+'" data-id="'+n.id+'" style="transform:translate('+n.x+'px,'+n.y+'px)">'+(n.type!=='trigger'?'<i class="port in"></i>':'')+'<div class="ic">'+svgi(n.type)+'</div><div class="tx"><b>'+esc(n.title)+'</b><small>'+esc(T[n.type].sub(n.cfg))+'</small></div>'+outs+'</div>';
+}
+function drawEdges(){
+  $('#edges').innerHTML=edges.map(e=>{
+    const a=byId(e.from),b=byId(e.to);if(!a||!b)return '';
+    const d=curve(outPos(a,e.port),inPos(b)),s=sel&&sel.k==='e'&&sel.id===e.id;
+    return '<path class="hit" data-e="'+e.id+'" d="'+d+'"/><path class="edge'+(s?' sel':'')+(e.live?' live':'')+'" d="'+d+'"/>';
+  }).join('')+(tmp?'<path class="edge tmp" d="'+tmp+'"/>':'');
+}
+function renderNodes(){
+  $('#nodes').innerHTML=nodes.map(nodeHTML).join('');
+  drawEdges();stat();save();
+}
+function stat(){
+  $('#stat').textContent=nodes.length+(nodes.length===1?' step, ':' steps, ')+edges.length+(edges.length===1?' connection':' connections');
+  $('#empty').style.display=nodes.length?'none':'grid';
+}
+function applyView(){
+  world.style.transform='translate('+view.x+'px,'+view.y+'px) scale('+view.k+')';
+  canvas.style.backgroundPosition=view.x+'px '+view.y+'px';
+  canvas.style.backgroundSize=(24*view.k)+'px '+(24*view.k)+'px';
+}
+function toWorld(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k}}
+function zoomAt(cx,cy,f){
+  const r=canvas.getBoundingClientRect(),k=clamp(view.k*f,.4,1.6),px=(cx-r.left-view.x)/view.k,py=(cy-r.top-view.y)/view.k;
+  view.x=cx-r.left-px*k;view.y=cy-r.top-py*k;view.k=k;applyView();
+}
+function fit(){
+  const r=canvas.getBoundingClientRect();
+  if(!nodes.length){view={x:40,y:40,k:1};applyView();return}
+  const x0=Math.min(...nodes.map(n=>n.x)),y0=Math.min(...nodes.map(n=>n.y)),x1=Math.max(...nodes.map(n=>n.x+W)),y1=Math.max(...nodes.map(n=>n.y+H));
+  const k=clamp(Math.min((r.width-100)/(x1-x0),(r.height-140)/(y1-y0)),.4,1.1);
+  view={k:k,x:(r.width-(x1-x0)*k)/2-x0*k,y:(r.height-(y1-y0)*k)/2-y0*k-10};applyView();
+}
+
+/* selection + inspector */
+function select(s){
+  sel=s;
+  $$('.node').forEach(el=>el.classList.toggle('sel',!!s&&s.k==='n'&&s.id===el.dataset.id));
+  drawEdges();renderInsp();
+}
+function field(n,[k,l,t,o]){
+  const v=n.cfg[k]??'';let c;
+  if(t==='sel')c='<select data-k="'+k+'">'+o.map(x=>'<option'+(v===x?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select>';
+  else if(t==='area')c='<textarea data-k="'+k+'">'+esc(v)+'</textarea>';
+  else c='<input data-k="'+k+'" type="'+(t==='num'?'number" min="1':'text')+'" value="'+esc(v)+'">';
+  return '<label class="f"><span>'+l+'</span>'+c+'</label>';
+}
+function renderInsp(){
+  const el=$('#insp');app.classList.toggle('has-sel',!!sel);
+  if(!sel){el.innerHTML='<h3>Properties</h3><p>Select a step or a connection to edit it.</p><p style="margin-top:10px">To connect two steps, drag from the round port on the right of one step to the left port of another.</p>';return}
+  if(sel.k==='n'){
+    const n=byId(sel.id);if(!n)return;
+    el.innerHTML='<h3>'+T[n.type].label+'</h3><label class="f"><span>Step name</span><input data-k="title" value="'+esc(n.title)+'"></label>'+T[n.type].f.map(f=>field(n,f)).join('')+'<button class="btn danger" id="del">Delete step</button><button class="btn m-only" id="done">Done</button>';
+  }else{
+    const e=edges.find(x=>x.id===sel.id);if(!e)return;const a=byId(e.from),b=byId(e.to);
+    el.innerHTML='<h3>Connection</h3><p>From '+esc(a.title)+(a.type==='condition'?' ('+(e.port==='yes'?'Yes':'No')+' branch)':'')+' to '+esc(b.title)+'.</p><button class="btn danger" id="del">Delete connection</button><button class="btn m-only" id="done">Done</button>';
+  }
+}
+$('#insp').addEventListener('input',e=>{
+  const k=e.target.dataset.k;if(!k||!sel||sel.k!=='n')return;
+  const n=byId(sel.id);if(k==='title')n.title=e.target.value;else n.cfg[k]=e.target.value;
+  const el=$('.node[data-id="'+n.id+'"]');$('b',el).textContent=n.title;$('small',el).textContent=T[n.type].sub(n.cfg);save();
+});
+$('#insp').addEventListener('click',e=>{
+  if(e.target.id==='del')del();
+  if(e.target.id==='done')select(null);
+});
+
+/* editing */
+function addNode(type,x,y){
+  const n={id:uniq('n',nodes),type:type,x:snap(x),y:snap(y),title:T[type].title,cfg:Object.assign({},T[type].cfg)};
+  nodes.push(n);sel={k:'n',id:n.id};renderNodes();renderInsp();
+}
+function del(){
+  if(!sel)return;
+  if(sel.k==='n'){nodes=nodes.filter(n=>n.id!==sel.id);edges=edges.filter(e=>e.from!==sel.id&&e.to!==sel.id)}
+  else edges=edges.filter(e=>e.id!==sel.id);
+  sel=null;renderNodes();renderInsp();
+}
+document.addEventListener('keydown',e=>{
+  if((e.key==='Delete'||e.key==='Backspace')&&sel&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();del()}
+});
+
+/* pointer interactions */
+canvas.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.hud,.log'))return;
+  const port=e.target.closest('.port.out'),node=e.target.closest('.node'),hit=e.target.closest('.hit');
+  if(port)return connect(e,node,port.dataset.p);
+  if(node)return dragNode(e,node);
+  if(hit)return select({k:'e',id:hit.dataset.e});
+  pan(e);
+});
+function dragNode(e,el){
+  const n=byId(el.dataset.id);select({k:'n',id:n.id});
+  const p=toWorld(e),ox=p.x-n.x,oy=p.y-n.y;
+  const mv=ev=>{const q=toWorld(ev);n.x=snap(q.x-ox);n.y=snap(q.y-oy);el.style.transform='translate('+n.x+'px,'+n.y+'px)';drawEdges()};
+  const up=()=>{removeEventListener('pointermove',mv);save()};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up,{once:true});
+}
+function pan(e){
+  const sx=e.clientX,sy=e.clientY,vx=view.x,vy=view.y;let moved=false;
+  const mv=ev=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;if(Math.abs(dx)+Math.abs(dy)>4)moved=true;view.x=vx+dx;view.y=vy+dy;applyView()};
+  const up=()=>{removeEventListener('pointermove',mv);if(!moved)select(null)};
+  addEventListener('pointermove',mv);addEventListener('pointerup',up,{once:true});
+}
+function connect(e,el,port){
+  e.preventDefault();
+  const from=el.dataset.id,a=byId(from),start=outPos(a,port);let hot=null;
+  const target=ev=>{const h=document.elementFromPoint(ev.clientX,ev.clientY),nd=h&&h.closest?h.closest('.node'):null;
+    return nd&&nd.dataset.id!==from&&byId(nd.dataset.id).type!=='trigger'?nd:null};
+  const mv=ev=>{tmp=curve(start,toWorld(ev));drawEdges();const nd=target(ev);if(hot&&hot!==nd)hot.classList.remove('hot');hot=nd;if(nd)nd.classList.add('hot')};
+  const up=ev=>{
+    removeEventListener('pointermove',mv);const nd=target(ev);tmp='';if(hot)hot.classList.remove('hot');
+    if(nd){const to=nd.dataset.id;
+      if(!edges.some(x=>x.from===from&&x.port===port&&x.to===to)){const id=uniq('e',edges);edges.push({id:id,from:from,port:port,to:to});sel={k:'e',id:id};renderInsp()}}
+    drawEdges();stat();save();
+  };
+  addEventListener('pointermove',mv);addEventListener('pointerup',up,{once:true});
+}
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY<0?1.1:1/1.1)},{passive:false});
+const mid=f=>{const r=canvas.getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,f)};
+$('#z-in').onclick=()=>mid(1.2);$('#z-out').onclick=()=>mid(1/1.2);$('#z-fit').onclick=fit;
+
+/* test run */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const logEl=$('#log');
+function say(t){let ol=$('ol',logEl);const li=document.createElement('li');li.textContent=t;ol.appendChild(li);logEl.scrollTop=logEl.scrollHeight}
+async function visit(n,depth){
+  if(depth>30)return say('Stopped: this flow loops back on itself.');
+  const el=$('.node[data-id="'+n.id+'"]');if(!el)return;
+  el.classList.add('run');say(T[n.type].say(n.cfg));await sleep(800);
+  el.classList.remove('run');el.classList.add('ok');
+  const branch=n.cfg.test==='No'?'no':'yes';
+  const outs=edges.filter(e=>e.from===n.id&&(n.type!=='condition'||e.port===branch));
+  if(!outs.length&&n.type==='condition')say('Nothing is connected to the '+branch.toUpperCase()+' branch.');
+  for(const e of outs){e.live=true;drawEdges();await sleep(550);e.live=false;drawEdges();const t=byId(e.to);if(t)await visit(t,depth+1)}
+}
+$('#b-run').onclick=async()=>{
+  if(running)return;
+  logEl.hidden=false;logEl.innerHTML='<div class="lh"><b>Test run</b><button id="lx" aria-label="Close log">×</button></div><ol></ol>';
+  $('#lx').onclick=()=>{logEl.hidden=true};
+  const starts=nodes.filter(n=>n.type==='trigger');
+  if(!starts.length)return say('Add a Trigger step so the flow knows when to start.');
+  running=true;const b=$('#b-run');b.disabled=true;b.textContent='Running…';
+  $$('.node').forEach(el=>el.classList.remove('ok'));
+  for(const s of starts)await visit(s,0);
+  say('Finished.');running=false;b.disabled=false;b.textContent='Run test';
+  setTimeout(()=>$$('.node').forEach(el=>el.classList.remove('ok')),2000);
+};
+
+/* data */
+function data(){return{name:$('#wfname').value,nodes:nodes.map(n=>({id:n.id,type:n.type,title:n.title,x:n.x,y:n.y,cfg:n.cfg})),edges:edges.map(e=>({id:e.id,from:e.from,port:e.port,to:e.to}))}}
+function save(){try{localStorage.setItem('bizflow-designer',JSON.stringify(data()))}catch(e){}}
+function load(d){
+  if(!d||!Array.isArray(d.nodes)||!Array.isArray(d.edges))throw new Error('bad');
+  nodes=d.nodes.filter(n=>T[n.type]).map(n=>({id:String(n.id),type:n.type,title:String(n.title||T[n.type].title),x:+n.x||0,y:+n.y||0,cfg:Object.assign({},T[n.type].cfg,n.cfg||{})}));
+  edges=d.edges.filter(e=>byId(String(e.from))&&byId(String(e.to))).map((e,i)=>({id:String(e.id||'e'+(i+1)),from:String(e.from),port:e.port||'out',to:String(e.to)}));
+  if(d.name)$('#wfname').value=String(d.name);
+  sel=null;renderNodes();renderInsp();fit();
+}
+function sample(){
+  const c=(type,id,x,y,title,cfg)=>({id:id,type:type,x:x,y:y,title:title,cfg:cfg});
+  load({name:'Order to invoice',nodes:[
+    c('trigger','n1',40,192,'New order',{event:'New order'}),
+    c('condition','n2',312,192,'Order over 500?',{field:'Order total',op:'greater than',val:'500',test:'Yes'}),
+    c('approval','n3',600,60,'Manager approval',{who:'Finance manager',sla:'24'}),
+    c('action','n4',888,192,'Create invoice',{act:'Create invoice'}),
+    c('notify','n5',1176,192,'Notify team',{ch:'Slack',msg:'Invoice is ready.'})],
+  edges:[{id:'e1',from:'n1',port:'out',to:'n2'},{id:'e2',from:'n2',port:'yes',to:'n3'},{id:'e3',from:'n2',port:'no',to:'n4'},{id:'e4',from:'n3',port:'out',to:'n4'},{id:'e5',from:'n4',port:'out',to:'n5'}]});
+}
+$('#b-sample').onclick=sample;
+$('#b-clear').onclick=()=>{nodes=[];edges=[];sel=null;renderNodes();renderInsp();fit()};
+$('#wfname').addEventListener('input',save);
+const modal=$('#modal'),ta=$('#json'),mm=$('#m-msg');
+$('#b-export').onclick=()=>{ta.value=JSON.stringify(data(),null,2);mm.textContent='';modal.hidden=false};
+$('#m-close').onclick=()=>{modal.hidden=true};
+modal.addEventListener('pointerdown',e=>{if(e.target===modal)modal.hidden=true});
+$('#m-copy').onclick=async()=>{try{await navigator.clipboard.writeText(ta.value);mm.textContent='Copied.'}catch(e){ta.select();mm.textContent='Press Ctrl+C to copy.'}};
+$('#m-load').onclick=()=>{try{load(JSON.parse(ta.value));modal.hidden=true}catch(e){mm.textContent='That JSON is not a valid workflow.'}};
+
+/* start */
+let saved=null;try{saved=JSON.parse(localStorage.getItem('bizflow-designer'))}catch(e){}
+renderInsp();applyView();
+requestAnimationFrame(()=>{if(saved&&Array.isArray(saved.nodes)){try{load(saved)}catch(e){sample()}}else sample()});
+addEventListener('resize',()=>{});
+})();
+</script>
+</body>
+</html>

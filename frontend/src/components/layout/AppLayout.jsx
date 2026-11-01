@@ -47,8 +47,7 @@ export default function AppLayout({ children }) {
       />
       <aside className={`app-sidebar ${mobileOpen ? "is-open" : ""}`}>
         <div className="sidebar-brand">
-          <span className="brand-mark">B</span>
-          <span>BizFlow</span>
+          <img src="/bizflow-logo.png" alt="BizFlow" />
         </div>
 
         <div className="sidebar-label">Workspace</div>

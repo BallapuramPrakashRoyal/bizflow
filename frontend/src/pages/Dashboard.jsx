@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import WorkflowDesigner from "../components/WorkflowDesigner";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -198,7 +199,6 @@ export function Workspace({ activeSection, currentUser, onDataChange }) {
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [organizationName, setOrganizationName] = useState("");
-  const [project, setProject] = useState({ name: "", description: "", organizationId: "" });
   const [task, setTask] = useState({ title: "", description: "", projectId: "", assigneeEmail: "" });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -343,9 +343,7 @@ export function Workspace({ activeSection, currentUser, onDataChange }) {
       </div>}
 
       {activeSection === "projects" && <div className="workspace-grid">
-        <form className="workspace-card" onSubmit={(event) => submit(event, "/projects", { ...project, organizationId: Number(project.organizationId) }, "Project created.", () => setProject({ name: "", description: "", organizationId: "" }))}>
-          <h3>New project</h3><input value={project.name} onChange={(event) => setProject({ ...project, name: event.target.value })} placeholder="Project name" required /><textarea value={project.description} onChange={(event) => setProject({ ...project, description: event.target.value })} placeholder="Description (optional)" /><select value={project.organizationId} onChange={(event) => setProject({ ...project, organizationId: event.target.value })} required><option value="">Choose organization</option>{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select><button className="primary-button" type="submit" disabled={!organizations.length}>Create project</button>
-        </form>
+        <WorkflowDesigner organizations={organizations} onSaved={async () => { setMessage("Project and workflow created."); await Promise.all([loadWorkspace(), onDataChange()]); }} />
         <div className="workspace-card workspace-list"><h3>All projects</h3><ul>{projects.map((item) => <li key={item.id}><strong>{item.name}</strong><span>{item.description || "No description"}</span><div><button className="text-button" onClick={() => { const name = window.prompt("Project name", item.name); if (name) runAction(() => api.put(`/projects/${item.id}`, { name, description: item.description || "" }), "Project updated."); }}>Edit</button><button className="text-button danger" onClick={() => window.confirm(`Delete ${item.name}?`) && runAction(() => api.delete(`/projects/${item.id}`), "Project deleted.")}>Delete</button></div></li>)}</ul></div>
       </div>}
 
