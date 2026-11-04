@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 @SpringBootApplication(
         exclude = UserDetailsServiceAutoConfiguration.class
@@ -24,6 +26,19 @@ public class BackendApplication {
             URI renderDatabaseUrl = URI.create(databaseUrl);
             if (renderDatabaseUrl.getHost() == null || renderDatabaseUrl.getPath() == null) {
                 throw new IllegalStateException("DATABASE_URL must contain a valid PostgreSQL host and database");
+            }
+
+            String userInfo = renderDatabaseUrl.getUserInfo();
+            if (userInfo != null && userInfo.contains(":")) {
+                String[] credentials = userInfo.split(":", 2);
+                System.setProperty(
+                        "DATABASE_USERNAME",
+                        URLDecoder.decode(credentials[0], StandardCharsets.UTF_8)
+                );
+                System.setProperty(
+                        "DATABASE_PASSWORD",
+                        URLDecoder.decode(credentials[1], StandardCharsets.UTF_8)
+                );
             }
 
             StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://")
