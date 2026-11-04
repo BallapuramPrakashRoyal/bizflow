@@ -144,6 +144,38 @@ cd ../backend
 ./mvnw test
 ```
 
+## 🌍 Deploying BizFlow
+
+BizFlow uses two deployable services:
+
+1. **Frontend:** deploy the repository to Vercel.
+2. **Backend:** deploy `backend/Dockerfile` to a Java container host such as Render, Railway, or Fly.io, with a managed PostgreSQL database.
+
+### Deploy the frontend to Vercel
+
+Import the GitHub repository into Vercel. The included `vercel.json` builds the React app from `frontend/` and enables client-side routing. Add this Vercel environment variable before deploying:
+
+```text
+VITE_API_URL=https://your-backend.example.com/api
+```
+
+Redeploy after adding or changing environment variables. The value must be the public backend URL and must end with `/api`.
+
+### Deploy the backend
+
+Configure the backend service to use `backend` as its root directory and `backend/Dockerfile` as its Dockerfile. Set these environment variables on the backend host:
+
+```text
+DATABASE_URL=jdbc:postgresql://<host>:<port>/<database>
+DATABASE_USERNAME=<database-user>
+DATABASE_PASSWORD=<database-password>
+DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+JWT_SECRET=<random-secret-at-least-32-characters>
+CORS_ALLOWED_ORIGINS=https://your-project.vercel.app
+```
+
+The backend listens on the host-provided `PORT` and exposes its health check at `/api/health`. Add your final custom Vercel domain to `CORS_ALLOWED_ORIGINS` as well if you use one. Do not use the local H2 fallback for a public deployment because container storage is not durable.
+
 ## 🔌 API overview
 
 All protected endpoints use the JWT returned by `POST /api/auth/login`.
