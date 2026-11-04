@@ -38,14 +38,10 @@ public class BackendApplication {
             String userInfo = renderDatabaseUrl.getUserInfo();
             if (userInfo != null && userInfo.contains(":")) {
                 String[] credentials = userInfo.split(":", 2);
-                System.setProperty(
-                        "DATABASE_USERNAME",
-                        URLDecoder.decode(credentials[0], StandardCharsets.UTF_8)
-                );
-                System.setProperty(
-                        "DATABASE_PASSWORD",
-                        URLDecoder.decode(credentials[1], StandardCharsets.UTF_8)
-                );
+                String username = URLDecoder.decode(credentials[0], StandardCharsets.UTF_8);
+                String password = URLDecoder.decode(credentials[1], StandardCharsets.UTF_8);
+                System.setProperty("spring.datasource.username", username);
+                System.setProperty("spring.datasource.password", password);
             }
 
             StringBuilder jdbcUrl = new StringBuilder("jdbc:postgresql://")
@@ -58,7 +54,7 @@ public class BackendApplication {
                 jdbcUrl.append('?').append(renderDatabaseUrl.getQuery());
             }
 
-            System.setProperty("DATABASE_URL", jdbcUrl.toString());
+            System.setProperty("spring.datasource.url", jdbcUrl.toString());
         }
     }
 }
