@@ -20,10 +20,17 @@ public class BackendApplication {
 
     private static void normalizeRenderDatabaseUrl() {
         String databaseUrl = System.getenv("DATABASE_URL");
-        if (databaseUrl != null
-                && (databaseUrl.startsWith("postgresql://")
-                || databaseUrl.startsWith("postgres://"))) {
-            URI renderDatabaseUrl = URI.create(databaseUrl);
+        if (databaseUrl == null) {
+            return;
+        }
+
+        String uriValue = databaseUrl;
+        if (databaseUrl.startsWith("jdbc:")) {
+            uriValue = databaseUrl.substring("jdbc:".length());
+        }
+
+        if (uriValue.startsWith("postgresql://") || uriValue.startsWith("postgres://")) {
+            URI renderDatabaseUrl = URI.create(uriValue);
             if (renderDatabaseUrl.getHost() == null || renderDatabaseUrl.getPath() == null) {
                 throw new IllegalStateException("DATABASE_URL must contain a valid PostgreSQL host and database");
             }
