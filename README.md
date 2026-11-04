@@ -163,6 +163,8 @@ Redeploy after adding or changing environment variables. The value must be the p
 
 ### Deploy the backend
 
+The repository includes `render.yaml`, so you can create the backend and its PostgreSQL database together from Render's **New + → Blueprint** flow. Select this repository, choose the `render.yaml` file, and apply the blueprint. Render generates `JWT_SECRET` automatically and asks you to provide `CORS_ALLOWED_ORIGINS`.
+
 Configure the backend service to use `backend` as its root directory and `backend/Dockerfile` as its Dockerfile. Set these environment variables on the backend host:
 
 ```text
