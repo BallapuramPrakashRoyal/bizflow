@@ -195,7 +195,7 @@ All protected endpoints use the JWT returned by `POST /api/auth/login`.
 
 ## 🔐 Configuration notes
 
-Never use the development JWT fallback in a public deployment. Set a unique `JWT_SECRET` with at least 32 characters and restrict `CORS_ALLOWED_ORIGINS` to the browser origins that should access the API.
+`JWT_SECRET` is required; the backend intentionally refuses to start when it is missing or shorter than 32 characters. Generate a unique random value for every environment, and rotate it if it was ever exposed or if the old development fallback was used. Restrict `CORS_ALLOWED_ORIGINS` to the browser origins that should access the API.
 
 The backend defaults to H2 for a quick local start. `backend/src/main/resources/application-example.properties` shows the PostgreSQL-oriented configuration shape for deployment.
 
